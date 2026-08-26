@@ -14,13 +14,14 @@
 				{
 					"binding": "DB",
 					"database_name": "breach-production",
-					"database_id": "00000000-0000-0000-0000-000000000000",
+					"database_id": "cc131580-6596-4c34-adfc-d6f97a0a2337",
 					"migrations_dir": "./drizzle"
 				}
 			],
 			"kv_namespaces": [
 				{
-					"binding": "KV"
+					"binding": "KV",
+					"id": "dfdb5605bfdf42a8a929ef34611b1e6d"
 				}
 			],
 			"vars": {
@@ -29,7 +30,7 @@
 			"r2_buckets": [
 				{
 					"binding": "RECEIPTS_BUCKET",
-					"bucket_name": "breach-production"
+					"bucket_name": "breach-receipts"
 				}
 			],
 			"ai": {
@@ -39,7 +40,7 @@
 		}
 	},
 	"vars": {
-		"TURNSTILE_SITE_KEY": "0x4AAAAAADmhzVCyDzH0_KQ-"
+		"TURNSTILE_SITE_KEY": "1x00000000000000000000AA"
 	},
 	"secrets": {
 		"required": ["TURNSTILE_SECRET_KEY", "BETTER_AUTH_SECRET"]
@@ -47,15 +48,15 @@
 	"d1_databases": [
 		{
 			"binding": "DB",
-			"database_name": "breach",
-			"database_id": "00000000-0000-0000-0000-000000000000",
+			"database_name": "breach-production",
+			"database_id": "cc131580-6596-4c34-adfc-d6f97a0a2337",
 			"migrations_dir": "./drizzle"
 		}
 	],
 	"kv_namespaces": [
 		{
 			"binding": "KV",
-			"id": "00000000000000000000000000000000"
+			"id": "dfdb5605bfdf42a8a929ef34611b1e6d"
 		}
 	],
 	"r2_buckets": [

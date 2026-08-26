@@ -1,0 +1,560 @@
+/* =========================================================================
+   INSIGHTA AI DESIGN SYSTEM & COMPONENT STYLESHEET
+   Central repository listing ALL UI elements used across Breach AI.
+   ========================================================================= */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Montserrat:wght@400;600;700;800&display=swap');
+@import 'tailwindcss';
+
+@font-face {
+	font-family: 'RecifeDisplay';
+	src: url('/fonts/RecifeDisplay-Bold.woff2');
+	src: url('/fonts/RecifeDisplay-Bold.woff');
+	font-weight: bold;
+	font-style: normal;
+	font-display: swap;
+}
+
+@theme {
+	/* Brand Fonts */
+	--font-serif: 'Inter', 'RecifeDisplay', system-ui, sans-serif;
+	--font-sans:
+		'Inter', 'Montserrat', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+		sans-serif;
+
+	/* Insighta AI Dark Theme Palette */
+	--color-purple: #8b5cf6;
+	--color-purple-hover: #7c3aed;
+	--color-purple-light: rgba(139, 92, 246, 0.18);
+	--color-purple-glow: rgba(139, 92, 246, 0.35);
+
+	--color-coral: #8b5cf6;
+	--color-coral-hover: #7c3aed;
+	--color-coral-light: rgba(139, 92, 246, 0.18);
+
+	--color-dark-bg: #0b0c10;
+	--color-dark-surface: #14151b;
+	--color-dark-card: #1c1d26;
+	--color-dark-border: #262836;
+
+	--color-text-main: #f8fafc;
+	--color-text-muted: #94a3b8;
+	--color-text-subtle: #64748b;
+
+	--color-neon-green: #22c55e;
+	--color-neon-orange: #f97316;
+	--color-badge-teal: #8b5cf6;
+	--color-success: #22c55e;
+	--color-warning: #f97316;
+}
+
+/* Custom Base & Utility Styles */
+@layer base {
+	body {
+		font-family: var(--font-sans);
+		color: var(--color-text-main);
+		background-color: var(--color-dark-bg);
+		margin: 0;
+		padding: 0;
+		-webkit-font-smoothing: antialiased;
+	}
+}
+
+/* 1. Rounded Container & Pill Utilities */
+.sharp-corners {
+	border-radius: 1rem !important;
+}
+
+.pill-corners {
+	border-radius: 9999px !important;
+}
+
+.glow-purple {
+	box-shadow: 0 0 25px rgba(139, 92, 246, 0.35);
+}
+
+.glow-purple-sm {
+	box-shadow: 0 0 12px rgba(139, 92, 246, 0.25);
+}
+
+/* 2. Visual Color Tokens & Links */
+.bg-coral,
+.bg-purple {
+	background-color: var(--color-purple);
+}
+
+.text-coral,
+.text-purple {
+	color: var(--color-purple);
+}
+
+.border-coral,
+.border-purple {
+	border-color: var(--color-purple);
+}
+
+.text-link-coral,
+.text-link-purple {
+	font-family: var(--font-sans);
+	font-weight: 600;
+	color: var(--color-purple);
+	border-bottom: 2px solid var(--color-purple);
+	text-decoration: none;
+	transition: opacity 0.2s ease;
+	display: inline-block;
+	border-radius: 0px;
+}
+
+.text-link-coral:hover,
+.text-link-purple:hover {
+	opacity: 0.85;
+}
+
+/* 3. Button UI Elements */
+.btn-primary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1.25rem;
+	font-family: var(--font-sans);
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: #ffffff;
+	background-color: var(--color-purple);
+	border: 1px solid var(--color-purple);
+	border-radius: 9999px;
+	box-shadow: 0 0 15px rgba(139, 92, 246, 0.3);
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.btn-primary:hover {
+	background-color: var(--color-purple-hover);
+	border-color: var(--color-purple-hover);
+	box-shadow: 0 0 25px rgba(139, 92, 246, 0.5);
+}
+
+.btn-secondary {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1.25rem;
+	font-family: var(--font-sans);
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-text-main);
+	background-color: var(--color-dark-card);
+	border: 1px solid var(--color-dark-border);
+	border-radius: 9999px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+	background-color: var(--color-dark-border);
+	border-color: #3e3e4a;
+}
+
+.btn-outline {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1.25rem;
+	font-family: var(--font-sans);
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: var(--color-purple);
+	background-color: transparent;
+	border: 1px solid var(--color-purple);
+	border-radius: 9999px;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.btn-outline:hover {
+	background-color: var(--color-purple-light);
+}
+
+.btn-danger {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 0.5rem;
+	padding: 0.5rem 1.25rem;
+	font-family: var(--font-sans);
+	font-weight: 600;
+	font-size: 0.875rem;
+	color: #ef4444;
+	background-color: rgba(239, 68, 68, 0.1);
+	border: 1px solid #ef4444;
+	border-radius: 9999px;
+	cursor: pointer;
+	transition: background-color 0.2s ease;
+}
+
+.btn-danger:hover {
+	background-color: rgba(239, 68, 68, 0.2);
+}
+
+.btn-icon {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0.5rem;
+	color: var(--color-text-muted);
+	background-color: var(--color-dark-card);
+	border: 1px solid var(--color-dark-border);
+	border-radius: 9999px;
+	cursor: pointer;
+	transition: all 0.2s ease;
+}
+
+.btn-icon:hover {
+	color: #ffffff;
+	border-color: var(--color-purple);
+	background-color: var(--color-dark-border);
+}
+
+/* 4. Form Input & Control UI Elements */
+.form-input,
+.form-select,
+.form-textarea {
+	width: 100%;
+	padding: 0.5rem 0.875rem;
+	font-family: var(--font-sans);
+	font-size: 0.875rem;
+	color: var(--color-text-main);
+	background-color: var(--color-dark-card);
+	border: 1px solid var(--color-dark-border);
+	border-radius: 0.75rem;
+	outline: none;
+	transition: border-color 0.2s ease;
+}
+
+.form-input:focus,
+.form-select:focus,
+.form-textarea:focus {
+	border-color: var(--color-purple);
+}
+
+.form-checkbox {
+	width: 1.125rem;
+	height: 1.125rem;
+	background-color: var(--color-dark-card);
+	border: 1px solid var(--color-dark-border);
+	border-radius: 0.25rem;
+	accent-color: var(--color-purple);
+	cursor: pointer;
+}
+
+.upload-zone {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 2rem;
+	background-color: var(--color-dark-surface);
+	border: 2px dashed var(--color-dark-border);
+	border-radius: 1rem;
+	cursor: pointer;
+	transition:
+		border-color 0.2s ease,
+		background-color 0.2s ease;
+}
+
+.upload-zone:hover {
+	border-color: var(--color-purple);
+	background-color: var(--color-dark-card);
+}
+
+/* 5. Badge & Tag UI Elements */
+.badge-teal,
+.badge-purple {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.2rem 0.65rem;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: #ffffff;
+	background-color: var(--color-purple);
+	border-radius: 9999px;
+}
+
+.badge-coral {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.2rem 0.65rem;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: var(--color-purple);
+	background-color: var(--color-purple-light);
+	border: 1px solid rgba(139, 92, 246, 0.3);
+	border-radius: 9999px;
+}
+
+.badge-success {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.2rem 0.65rem;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: #22c55e;
+	background-color: rgba(34, 197, 94, 0.18);
+	border: 1px solid rgba(34, 197, 94, 0.3);
+	border-radius: 9999px;
+}
+
+.badge-warning {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.25rem;
+	padding: 0.2rem 0.65rem;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 600;
+	color: #f97316;
+	background-color: rgba(249, 115, 22, 0.18);
+	border: 1px solid rgba(249, 115, 22, 0.3);
+	border-radius: 9999px;
+}
+
+/* 6. Card & Surface UI Elements */
+.card-surface {
+	background-color: var(--color-dark-surface);
+	border: 1px solid var(--color-dark-border);
+	padding: 1.5rem;
+	border-radius: 1rem;
+}
+
+.card-metric {
+	background-color: var(--color-dark-surface);
+	border: 1px solid var(--color-dark-border);
+	padding: 1.25rem;
+	border-radius: 1rem;
+	transition: all 0.2s ease;
+}
+
+.card-metric:hover {
+	border-color: rgba(139, 92, 246, 0.4);
+}
+
+.card-asset {
+	background-color: var(--color-dark-surface);
+	border: 1px solid var(--color-dark-border);
+	padding: 1.5rem;
+	border-radius: 1rem;
+	transition: all 0.2s ease;
+}
+
+.card-asset:hover {
+	border-color: var(--color-purple);
+	box-shadow: 0 0 20px rgba(139, 92, 246, 0.15);
+}
+
+/* 7. Data Table UI Elements */
+.table-sharp {
+	width: 100%;
+	border-collapse: separate;
+	border-spacing: 0;
+	background-color: var(--color-dark-surface);
+	border: 1px solid var(--color-dark-border);
+	border-radius: 1rem;
+	overflow: hidden;
+}
+
+.table-sharp th {
+	padding: 0.75rem 1rem;
+	text-align: left;
+	font-family: var(--font-sans);
+	font-size: 0.75rem;
+	font-weight: 700;
+	text-transform: uppercase;
+	letter-spacing: 0.05em;
+	color: var(--color-text-muted);
+	background-color: var(--color-dark-card);
+	border-bottom: 1px solid var(--color-dark-border);
+}
+
+.table-sharp td {
+	padding: 0.875rem 1rem;
+	font-family: var(--font-sans);
+	font-size: 0.875rem;
+	color: var(--color-text-main);
+	border-bottom: 1px solid var(--color-dark-border);
+}
+
+.table-sharp tr:last-child td {
+	border-bottom: none;
+}
+
+.table-sharp tr:hover td {
+	background-color: var(--color-dark-card);
+}
+
+/* 8. Modal & Overlay UI Elements */
+.modal-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 50;
+	background-color: rgba(0, 0, 0, 0.85);
+	backdrop-filter: blur(4px);
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 1rem;
+}
+
+.modal-container {
+	width: 100%;
+	max-width: 36rem;
+	background-color: var(--color-dark-surface);
+	border: 1px solid var(--color-dark-border);
+	border-radius: 1.25rem;
+	box-shadow:
+		0 25px 50px -12px rgba(0, 0, 0, 0.7),
+		0 0 30px rgba(139, 92, 246, 0.2);
+	overflow: hidden;
+}
+
+.modal-header {
+	padding: 1.25rem 1.5rem;
+	border-bottom: 1px solid var(--color-dark-border);
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+}
+
+.modal-body {
+	padding: 1.5rem;
+}
+
+.modal-footer {
+	padding: 1rem 1.5rem;
+	border-top: 1px solid var(--color-dark-border);
+	background-color: var(--color-dark-card);
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 0.75rem;
+}
+
+/* 9. Alert & Notification Banner UI Elements */
+.alert-success {
+	padding: 1rem;
+	background-color: rgba(34, 197, 94, 0.12);
+	border: 1px solid rgba(34, 197, 94, 0.3);
+	color: #4ade80;
+	font-size: 0.875rem;
+	border-radius: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.alert-error {
+	padding: 1rem;
+	background-color: rgba(239, 68, 68, 0.12);
+	border: 1px solid rgba(239, 68, 68, 0.3);
+	color: #f87171;
+	font-size: 0.875rem;
+	border-radius: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+.alert-info {
+	padding: 1rem;
+	background-color: rgba(139, 92, 246, 0.12);
+	border: 1px solid rgba(139, 92, 246, 0.3);
+	color: #c084fc;
+	font-size: 0.875rem;
+	border-radius: 0.75rem;
+	display: flex;
+	align-items: center;
+	gap: 0.75rem;
+}
+
+/* 10. Print Optimization Styles */
+@media print {
+	@page {
+		size: A4 portrait;
+		margin: 10mm;
+	}
+
+	html,
+	body {
+		background-color: #ffffff !important;
+		background: #ffffff !important;
+		color: #000000 !important;
+		-webkit-print-color-adjust: exact !important;
+		print-color-adjust: exact !important;
+		height: auto !important;
+		min-height: 0 !important;
+		overflow: visible !important;
+	}
+
+	/* Hide navigation and UI controls */
+	header,
+	nav,
+	.no-print,
+	.print\:hidden {
+		display: none !important;
+	}
+
+	/* Force layout wrappers to white in print */
+	body,
+	main,
+	div {
+		background-color: transparent;
+	}
+
+	/* Expose modal and printable invoice container */
+	.print-invoice-modal {
+		position: static !important;
+		background: #ffffff !important;
+		background-color: #ffffff !important;
+		padding: 0 !important;
+		margin: 0 !important;
+		width: 100% !important;
+		max-width: 100% !important;
+		border: none !important;
+		box-shadow: none !important;
+		overflow: visible !important;
+		display: block !important;
+	}
+
+	#printable-tax-invoice {
+		visibility: visible !important;
+		display: block !important;
+		position: relative !important;
+		left: auto !important;
+		top: auto !important;
+		width: 100% !important;
+		margin: 0 !important;
+		padding: 0 !important;
+		background: #ffffff !important;
+		background-color: #ffffff !important;
+		color: #000000 !important;
+		box-shadow: none !important;
+		border: none !important;
+	}
+
+	#printable-tax-invoice * {
+		visibility: visible !important;
+	}
+
+	#printable-tax-invoice .bg-gray-50,
+	#printable-tax-invoice .bg-gray-100 {
+		background-color: #f9fafb !important;
+	}
+}

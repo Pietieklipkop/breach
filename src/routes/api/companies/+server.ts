@@ -64,6 +64,36 @@ export const POST: RequestHandler = async (event) => {
 			return json({ success: true, document: doc });
 		}
 
+		if (rawBody.action === 'addBankAccount') {
+			const { companyId, bankName, accountAlias, accountNumber, notes } = rawBody as {
+				companyId?: string;
+				bankName?: string;
+				accountAlias?: string;
+				accountNumber?: string;
+				notes?: string;
+			};
+
+			if (!companyId || !bankName || !accountAlias) {
+				return json(
+					{ error: 'Company ID, Bank Name, and Account Alias are required' },
+					{ status: 400 }
+				);
+			}
+
+			const bankAccount = await companyService.addBankAccount(tenant, companyId, {
+				bankName: bankName.trim(),
+				accountAlias: accountAlias.trim(),
+				accountNumber: accountNumber ? accountNumber.trim() : undefined,
+				notes: notes ? notes.trim() : undefined
+			});
+
+			if (!bankAccount) {
+				return json({ error: 'Company not found or access denied' }, { status: 404 });
+			}
+
+			return json({ success: true, bankAccount });
+		}
+
 		const parsed = createCompanySchema.safeParse(rawBody);
 		if (!parsed.success) {
 			return json({ error: 'Invalid payload', details: parsed.error.format() }, { status: 400 });
@@ -123,14 +153,30 @@ export const DELETE: RequestHandler = async (event) => {
 	}
 
 	try {
-		const rawBody = await event.request.json();
+		const rawBody = (await event.request.json()) as Record<string, unknown>;
+		const companyService = new CompanyService(d1);
+
+		if (rawBody.action === 'deleteBankAccount') {
+			const { companyId, bankAccountId } = rawBody as {
+				companyId?: string;
+				bankAccountId?: string;
+			};
+			if (!companyId || !bankAccountId) {
+				return json({ error: 'Company ID and Bank Account ID are required' }, { status: 400 });
+			}
+			const deleted = await companyService.deleteBankAccount(tenant, companyId, bankAccountId);
+			if (!deleted) {
+				return json({ error: 'Bank account not found or access denied' }, { status: 404 });
+			}
+			return json({ success: true });
+		}
+
 		const parsed = deleteCompanySchema.safeParse(rawBody);
 		if (!parsed.success) {
 			return json({ error: 'Invalid payload', details: parsed.error.format() }, { status: 400 });
 		}
 
 		const { id, docId } = parsed.data;
-		const companyService = new CompanyService(d1);
 
 		if (docId) {
 			// Find document's company or delete via docId

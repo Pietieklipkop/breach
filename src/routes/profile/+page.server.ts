@@ -8,6 +8,9 @@ import {
 } from '$lib/server/db/schema';
 import { user } from '$lib/server/db/auth.schema';
 import { eq, and } from 'drizzle-orm';
+import { DEFAULT_MASTER_CATEGORIES, getOrSeedExpenseCategories } from '$lib/server/categories';
+import { CompanyService } from '$lib/server/services';
+import type { Company, ExpenseCategory } from '$lib/types';
 
 export const load = async (event: RequestEvent) => {
 	const currentUser = event.locals.user;
@@ -17,6 +20,16 @@ export const load = async (event: RequestEvent) => {
 
 	const platform = event.platform;
 	const d1 = platform?.env?.DB;
+
+	const defaultCategories: ExpenseCategory[] = DEFAULT_MASTER_CATEGORIES.map((c, idx) => ({
+		id: `def-cat-${idx}`,
+		name: c.name,
+		slug: c.slug,
+		icon: c.icon,
+		color: c.color,
+		keywords: c.keywords,
+		isDefault: 1
+	}));
 
 	if (d1) {
 		const db = getDb(d1);
@@ -137,25 +150,122 @@ export const load = async (event: RequestEvent) => {
 			pendingInvites = invites;
 		}
 
+		// 5. Fetch masterdata: Categories and Companies
+		let categories = defaultCategories;
+		try {
+			categories = await getOrSeedExpenseCategories(db, activeHouseholdId, currentUser.id);
+		} catch (e) {
+			console.error('Error loading categories:', e);
+		}
+
+		let companies: Company[] = [];
+		try {
+			const companyService = new CompanyService(d1);
+			const tenant = {
+				userId: currentUser.id,
+				activeHouseholdId,
+				role: (currentActiveMember?.role as 'owner' | 'admin' | 'member') || 'member'
+			};
+			companies = await companyService.list(tenant);
+		} catch (e) {
+			console.error('Error loading companies:', e);
+		}
+
 		return {
+			user: {
+				id: currentUser.id,
+				name: currentUser.name,
+				email: currentUser.email,
+				phone: userProfile?.phone || ''
+			},
 			profile: userProfile,
 			householdsList: memberRecords,
 			activeHouseholdId,
 			activeHouseholdMembers,
-			pendingInvites
+			pendingInvites,
+			categories,
+			companies
 		};
 	}
 
 	return {
+		user: {
+			id: currentUser.id,
+			name: currentUser.name,
+			email: currentUser.email,
+			phone: ''
+		},
 		profile: null,
 		householdsList: [],
 		activeHouseholdId: '',
 		activeHouseholdMembers: [],
-		pendingInvites: []
+		pendingInvites: [],
+		categories: defaultCategories,
+		companies: [] as Company[]
 	};
 };
 
 export const actions = {
+	updateProfile: async (event: RequestEvent) => {
+		const currentUser = event.locals.user;
+		if (!currentUser) throw redirect(302, '/login');
+
+		const platform = event.platform;
+		const d1 = platform?.env?.DB;
+		if (!d1) return fail(500, { message: 'Database binding unavailable.' });
+
+		const formData = await event.request.formData();
+		const name = formData.get('name')?.toString().trim();
+		const email = formData.get('email')?.toString().trim().toLowerCase();
+		const phone = formData.get('phone')?.toString().trim() || '';
+
+		if (!name || !email) {
+			return fail(400, { message: 'Name and email are required.' });
+		}
+
+		const db = getDb(d1);
+
+		// Update user name and email
+		await db
+			.update(user)
+			.set({
+				name,
+				email,
+				updatedAt: new Date()
+			})
+			.where(eq(user.id, currentUser.id));
+
+		// Upsert or update userProfiles
+		const existingProfile = await db
+			.select()
+			.from(userProfiles)
+			.where(eq(userProfiles.userId, currentUser.id))
+			.get();
+
+		if (existingProfile) {
+			await db
+				.update(userProfiles)
+				.set({
+					phone,
+					updatedAt: new Date()
+				})
+				.where(eq(userProfiles.userId, currentUser.id));
+		} else {
+			await db.insert(userProfiles).values({
+				userId: currentUser.id,
+				phone,
+				currency: 'ZAR',
+				createdAt: new Date(),
+				updatedAt: new Date()
+			});
+		}
+
+		return {
+			success: true,
+			message: 'Personal details updated successfully!'
+		};
+	},
+
 	switchActiveHousehold: async (event: RequestEvent) => {
 		const currentUser = event.locals.user;
 		if (!currentUser) throw redirect(302, '/login');

@@ -1,17 +1,18 @@
 import { defineConfig } from 'drizzle-kit';
 
-if (!process.env.CLOUDFLARE_ACCOUNT_ID) throw new Error('CLOUDFLARE_ACCOUNT_ID is not set');
-if (!process.env.CLOUDFLARE_DATABASE_ID) throw new Error('CLOUDFLARE_DATABASE_ID is not set');
-if (!process.env.CLOUDFLARE_D1_TOKEN) throw new Error('CLOUDFLARE_D1_TOKEN is not set');
+const accountId = process.env.CLOUDFLARE_ACCOUNT_ID || 'dummy-account';
+const databaseId = process.env.CLOUDFLARE_DATABASE_ID || 'dummy-db';
+const token = process.env.CLOUDFLARE_D1_TOKEN || 'dummy-token';
 
 export default defineConfig({
+	out: './drizzle',
 	schema: './src/lib/server/db/schema.ts',
 	dialect: 'sqlite',
 	driver: 'd1-http',
 	dbCredentials: {
-		accountId: process.env.CLOUDFLARE_ACCOUNT_ID,
-		databaseId: process.env.CLOUDFLARE_DATABASE_ID,
-		token: process.env.CLOUDFLARE_D1_TOKEN
+		accountId,
+		databaseId,
+		token
 	},
 	verbose: true,
 	strict: true

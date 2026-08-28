@@ -147,6 +147,12 @@ export const expenses = sqliteTable('expenses', {
 		.references(() => user.id, { onDelete: 'cascade' }),
 	householdId: text('household_id').references(() => households.id, { onDelete: 'cascade' }),
 	assetId: text('asset_id').references(() => assets.id, { onDelete: 'set null' }),
+	paidFromBankAccountId: text('paid_from_bank_account_id').references(
+		() => companyBankAccounts.id,
+		{
+			onDelete: 'set null'
+		}
+	),
 	category: text('category').notNull().default('general'),
 	vendor: text('vendor').notNull(),
 	amountCents: integer('amount_cents').notNull(),
@@ -253,6 +259,10 @@ export const expensesRelations = relations(expenses, ({ one }) => ({
 	asset: one(assets, {
 		fields: [expenses.assetId],
 		references: [assets.id]
+	}),
+	paidFromBankAccount: one(companyBankAccounts, {
+		fields: [expenses.paidFromBankAccountId],
+		references: [companyBankAccounts.id]
 	})
 }));
 
@@ -323,7 +333,35 @@ export const companiesRelations = relations(companies, ({ one, many }) => ({
 		fields: [companies.householdId],
 		references: [households.id]
 	}),
-	documents: many(companyDocuments)
+	documents: many(companyDocuments),
+	bankAccounts: many(companyBankAccounts)
+}));
+
+// Company Bank Accounts Table
+export const companyBankAccounts = sqliteTable('company_bank_accounts', {
+	id: text('id')
+		.primaryKey()
+		.$defaultFn(() => crypto.randomUUID()),
+	companyId: text('company_id')
+		.notNull()
+		.references(() => companies.id, { onDelete: 'cascade' }),
+	bankName: text('bank_name').notNull(),
+	accountAlias: text('account_alias').notNull(),
+	accountNumber: text('account_number'),
+	notes: text('notes'),
+	createdAt: integer('created_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull(),
+	updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+		.default(sql`(cast(unixepoch('subsecond') * 1000 as integer))`)
+		.notNull()
+});
+
+export const companyBankAccountsRelations = relations(companyBankAccounts, ({ one }) => ({
+	company: one(companies, {
+		fields: [companyBankAccounts.companyId],
+		references: [companies.id]
+	})
 }));
 
 // Company Documents Table

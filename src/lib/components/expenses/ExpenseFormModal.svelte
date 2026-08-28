@@ -2,16 +2,23 @@
 	import { enhance } from '$app/forms';
 	import { Sparkles, X, Upload, Check, RefreshCw, FileCheck } from '@lucide/svelte';
 	import { autoCategorizeExpense } from '$lib/utils';
-	import type { ExpenseCategory, ParsedOcrResult } from '$lib/types';
+	import type { Company, ExpenseCategory, ParsedOcrResult } from '$lib/types';
 
 	interface Props {
 		isOpen: boolean;
 		categories: ExpenseCategory[];
+		companies?: Company[];
 		onclose: () => void;
 		onsuccess?: () => void;
 	}
 
-	let { isOpen = $bindable(false), categories, onclose, onsuccess }: Props = $props();
+	let {
+		isOpen = $bindable(false),
+		categories,
+		companies = [],
+		onclose,
+		onsuccess
+	}: Props = $props();
 
 	let isScanning = $state(false);
 	let scanCompleted = $state(false);
@@ -20,6 +27,7 @@
 	let expVendor = $state('');
 	let expCategory = $state<string>('');
 	let expAmountRand = $state<number | null>(null);
+	let expPaidFromBankAccountId = $state<string>('');
 	let expDate = $state(new Date().toISOString().split('T')[0]);
 	let expNotes = $state('');
 	let expRawOcrData = $state('');
@@ -29,6 +37,7 @@
 			expVendor = '';
 			expCategory = categories[0]?.slug || 'general';
 			expAmountRand = null;
+			expPaidFromBankAccountId = '';
 			expDate = new Date().toISOString().split('T')[0];
 			expNotes = '';
 			expRawOcrData = '';
@@ -246,21 +255,52 @@
 					</div>
 				</div>
 
-				<div>
-					<label
-						for="exp-date-input"
-						class="mb-1 block text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase"
-					>
-						Purchase Date *
-					</label>
-					<input
-						id="exp-date-input"
-						name="date"
-						type="date"
-						required
-						bind:value={expDate}
-						class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-3.5 py-2 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
-					/>
+				<div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+					<div>
+						<label
+							for="exp-date-input"
+							class="mb-1 block text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase"
+						>
+							Purchase Date *
+						</label>
+						<input
+							id="exp-date-input"
+							name="date"
+							type="date"
+							required
+							bind:value={expDate}
+							class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-3.5 py-2 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
+						/>
+					</div>
+
+					<div>
+						<label
+							for="exp-bank-account-select"
+							class="mb-1 block text-xs font-semibold tracking-wider text-[var(--color-text-muted)] uppercase"
+						>
+							Paid From Bank Account
+						</label>
+						<select
+							id="exp-bank-account-select"
+							name="paidFromBankAccountId"
+							bind:value={expPaidFromBankAccountId}
+							class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-3 py-2 text-sm text-white focus:outline-hidden"
+						>
+							<option value="">Personal / Unspecified Account</option>
+							{#each companies as comp (comp.id)}
+								{#if comp.bankAccounts && comp.bankAccounts.length > 0}
+									<optgroup label={comp.name}>
+										{#each comp.bankAccounts as acc (acc.id)}
+											<option value={acc.id}>
+												{acc.bankName} - {acc.accountAlias}
+												{acc.accountNumber ? `(${acc.accountNumber})` : ''}
+											</option>
+										{/each}
+									</optgroup>
+								{/if}
+							{/each}
+						</select>
+					</div>
 				</div>
 
 				<div>

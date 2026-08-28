@@ -28,16 +28,23 @@
 
 	let { data, form }: Props = $props();
 
-	let name = $state('');
+	let firstName = $state('');
+	let surname = $state('');
 	let email = $state('');
+	let householdName = $state('');
 	let password = $state('');
 	let confirmPassword = $state('');
 	let isLoading = $state(false);
 
 	$effect(() => {
 		if (data.inviteData) {
-			if (data.inviteData.name) name = data.inviteData.name;
+			if (data.inviteData.name) {
+				const parts = data.inviteData.name.trim().split(' ');
+				firstName = parts[0] || '';
+				surname = parts.slice(1).join(' ') || '';
+			}
 			if (data.inviteData.email) email = data.inviteData.email;
+			if (data.inviteData.householdName) householdName = data.inviteData.householdName;
 		}
 	});
 </script>
@@ -49,7 +56,7 @@
 <div
 	class="flex min-h-screen items-center justify-center bg-[var(--color-dark-bg)] p-4 text-[var(--color-text-main)]"
 >
-	<div class="w-full max-w-md space-y-8">
+	<div class="w-full max-w-lg space-y-8">
 		<!-- Brand Header -->
 		<div class="space-y-2 text-center">
 			<div
@@ -70,10 +77,10 @@
 			<div class="border-b border-[var(--color-dark-border)] pb-4">
 				<h2 class="flex items-center gap-2 font-serif text-2xl font-bold text-white">
 					<UserPlus class="text-[var(--color-coral)]" size={20} />
-					<span>Register New Account</span>
+					<span>Create an Account</span>
 				</h2>
 				<p class="mt-1 text-xs text-[var(--color-text-muted)]">
-					Create your account to start managing assets, mileage, and household expenses.
+					Register your details and household name to access your asset dashboard.
 				</p>
 			</div>
 
@@ -118,36 +125,64 @@
 					<input type="hidden" name="inviteToken" value={data.inviteToken} />
 				{/if}
 
-				<div>
-					<label
-						for="name"
-						class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
-					>
-						Full Name
-					</label>
-					<div class="relative">
-						<User
-							size={16}
-							class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
-						/>
-						<input
-							id="name"
-							name="name"
-							type="text"
-							required
-							bind:value={name}
-							placeholder="Member Name"
-							class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
-						/>
+				<!-- Name & Surname Grid -->
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<div>
+						<label
+							for="firstName"
+							class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
+						>
+							Name *
+						</label>
+						<div class="relative">
+							<User
+								size={16}
+								class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
+							/>
+							<input
+								id="firstName"
+								name="firstName"
+								type="text"
+								required
+								bind:value={firstName}
+								placeholder="First Name"
+								class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
+							/>
+						</div>
+					</div>
+
+					<div>
+						<label
+							for="surname"
+							class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
+						>
+							Surname *
+						</label>
+						<div class="relative">
+							<User
+								size={16}
+								class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
+							/>
+							<input
+								id="surname"
+								name="surname"
+								type="text"
+								required
+								bind:value={surname}
+								placeholder="Surname"
+								class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
+							/>
+						</div>
 					</div>
 				</div>
 
+				<!-- Email Address -->
 				<div>
 					<label
 						for="email"
 						class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
 					>
-						Email Address
+						Email Address *
 					</label>
 					<div class="relative">
 						<Mail
@@ -160,57 +195,85 @@
 							type="email"
 							required
 							bind:value={email}
-							placeholder="user@breach.co.za"
+							placeholder="user@example.com"
 							class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
 						/>
 					</div>
 				</div>
 
+				<!-- Household Name -->
 				<div>
 					<label
-						for="password"
+						for="householdName"
 						class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
 					>
-						Password
+						Household Name *
 					</label>
 					<div class="relative">
-						<Lock
+						<HomeIcon
 							size={16}
 							class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
 						/>
 						<input
-							id="password"
-							name="password"
-							type="password"
-							required
-							bind:value={password}
-							placeholder="At least 6 characters"
+							id="householdName"
+							name="householdName"
+							type="text"
+							required={!data.inviteToken}
+							bind:value={householdName}
+							placeholder="e.g. The Smith Residence"
 							class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
 						/>
 					</div>
 				</div>
 
-				<div>
-					<label
-						for="confirmPassword"
-						class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
-					>
-						Confirm Password
-					</label>
-					<div class="relative">
-						<Lock
-							size={16}
-							class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
-						/>
-						<input
-							id="confirmPassword"
-							name="confirmPassword"
-							type="password"
-							required
-							bind:value={confirmPassword}
-							placeholder="Re-enter password"
-							class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
-						/>
+				<!-- Password Grid -->
+				<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+					<div>
+						<label
+							for="password"
+							class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
+						>
+							Password *
+						</label>
+						<div class="relative">
+							<Lock
+								size={16}
+								class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
+							/>
+							<input
+								id="password"
+								name="password"
+								type="password"
+								required
+								bind:value={password}
+								placeholder="Enter password"
+								class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
+							/>
+						</div>
+					</div>
+
+					<div>
+						<label
+							for="confirmPassword"
+							class="mb-1.5 block text-xs font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
+						>
+							Confirm Password *
+						</label>
+						<div class="relative">
+							<Lock
+								size={16}
+								class="absolute top-1/2 left-3.5 -translate-y-1/2 text-[var(--color-text-subtle)]"
+							/>
+							<input
+								id="confirmPassword"
+								name="confirmPassword"
+								type="password"
+								required
+								bind:value={confirmPassword}
+								placeholder="Re-enter password"
+								class="sharp-corners w-full border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] py-2.5 pr-4 pl-10 text-sm text-white focus:border-[var(--color-coral)] focus:outline-hidden"
+							/>
+						</div>
 					</div>
 				</div>
 

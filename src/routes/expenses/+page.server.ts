@@ -2,9 +2,9 @@ import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { getDb } from '$lib/server/db';
 import { DEFAULT_MASTER_CATEGORIES, getOrSeedExpenseCategories } from '$lib/server/categories';
-import { ExpenseService } from '$lib/server/services';
+import { CompanyService, ExpenseService } from '$lib/server/services';
 import { createExpenseSchema, deleteExpenseSchema } from '$lib/schemas';
-import type { Expense, ExpenseCategory } from '$lib/types';
+import type { Company, Expense, ExpenseCategory } from '$lib/types';
 
 export const load: PageServerLoad = async ({ locals, platform }) => {
 	const currentUser = locals.user;
@@ -27,6 +27,7 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		return {
 			expenses: [] as Expense[],
 			categories: defaultCategories,
+			companies: [] as Company[],
 			user: currentUser
 		};
 	}
@@ -39,11 +40,17 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 	);
 
 	const expenseService = new ExpenseService(d1);
-	const expenses = await expenseService.list(locals.tenant);
+	const companyService = new CompanyService(d1);
+
+	const [expenses, companies] = await Promise.all([
+		expenseService.list(locals.tenant),
+		companyService.list(locals.tenant)
+	]);
 
 	return {
 		expenses,
 		categories,
+		companies,
 		user: currentUser
 	};
 };
@@ -58,6 +65,7 @@ export const actions: Actions = {
 		const formData = await request.formData();
 		const formEntries = Object.fromEntries(formData.entries());
 		const amountFloat = parseFloat((formEntries.amount as string) || '0');
+		const paidFromBankAccountId = (formEntries.paidFromBankAccountId as string) || undefined;
 
 		const parsed = createExpenseSchema.safeParse({
 			...formEntries,
@@ -78,7 +86,8 @@ export const actions: Actions = {
 		const expenseService = new ExpenseService(d1);
 		await expenseService.create(locals.tenant, {
 			...parsed.data,
-			date: parsedDate
+			date: parsedDate,
+			paidFromBankAccountId
 		});
 
 		return { success: true };

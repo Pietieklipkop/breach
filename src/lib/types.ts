@@ -56,11 +56,25 @@ export interface ExpenseCategory {
 	updatedAt?: Date | number;
 }
 
+export interface CompanyBankAccount {
+	id: string;
+	companyId: string;
+	bankName: string;
+	accountAlias: string;
+	accountNumber?: string | null;
+	notes?: string | null;
+	createdAt?: Date | number;
+	updatedAt?: Date | number;
+}
+
 export interface Expense {
 	id: string;
 	userId: string;
 	householdId?: string | null;
 	assetId?: string | null;
+	paidFromBankAccountId?: string | null;
+	paidFromBankAccount?: CompanyBankAccount | null;
+	paidFromCompany?: Company | null;
 	category: string;
 	vendor: string;
 	amountCents: number;
@@ -115,6 +129,7 @@ export interface Company {
 	ownershipDetails?: string | null;
 	logoUrl?: string | null;
 	documents?: CompanyDocument[];
+	bankAccounts?: CompanyBankAccount[];
 	createdAt?: Date | number;
 	updatedAt?: Date | number;
 }

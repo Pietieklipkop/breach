@@ -2,16 +2,7 @@
 	import './layout.css';
 	import { page } from '$app/state';
 	import type { Snippet } from 'svelte';
-	import {
-		LayoutDashboard,
-		Car,
-		Receipt,
-		User,
-		Settings,
-		FileText,
-		LogOut,
-		Palette
-	} from '@lucide/svelte';
+	import { LayoutDashboard, Car, Receipt, User, FileText, LogOut } from '@lucide/svelte';
 
 	interface LayoutProps {
 		children: Snippet;
@@ -31,8 +22,6 @@
 		{ label: 'Assets', href: '/assets', icon: Car },
 		{ label: 'Expenses', href: '/expenses', icon: Receipt },
 		{ label: 'Invoices', href: '/invoicing', icon: FileText },
-		{ label: 'Style Guide', href: '/style-guide', icon: Palette },
-		{ label: 'Settings', href: '/settings', icon: Settings },
 		{ label: 'Profile', href: '/profile', icon: User }
 	];
 </script>
@@ -114,29 +103,29 @@
 
 		<!-- Main Content Area -->
 		<main
-			class="mx-auto w-full max-w-[1400px] flex-1 p-4 pb-24 md:p-8 md:pb-12 print:m-0 print:w-full print:max-w-none print:bg-white print:p-0"
+			class="mx-auto w-full max-w-[1400px] flex-1 p-4 pb-28 md:p-8 md:pb-12 print:m-0 print:w-full print:max-w-none print:bg-white print:p-0"
 		>
 			{@render children()}
 		</main>
-
-		<!-- Mobile Bottom Navigation Bar (Pill Container) -->
-		<nav
-			class="fixed right-3 bottom-3 left-3 z-40 flex h-14 items-center justify-around rounded-full border border-[#262836] bg-[#14151b]/95 px-2 shadow-2xl backdrop-blur-md md:hidden print:hidden"
-		>
-			{#each navItems.slice(0, 5) as item (item.href)}
-				{@const Icon = item.icon}
-				{@const isActive =
-					currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href))}
-				<a
-					href={item.href}
-					class="flex flex-col items-center justify-center rounded-full p-2 text-[10px] transition-colors {isActive
-						? 'font-bold text-purple-400'
-						: 'text-slate-400'}"
-				>
-					<Icon size={18} class={isActive ? 'text-purple-400' : 'text-slate-400'} />
-					<span class="mt-0.5">{item.label}</span>
-				</a>
-			{/each}
-		</nav>
 	</div>
+
+	<!-- Mobile Bottom Navigation Bar (Pill Container) -->
+	<nav
+		class="mobile-bottom-nav flex h-14 items-center justify-around rounded-full border border-[#262836] bg-[#14151b]/95 px-2 shadow-2xl backdrop-blur-md md:hidden print:hidden"
+	>
+		{#each navItems as item (item.href)}
+			{@const Icon = item.icon}
+			{@const isActive =
+				currentPath === item.href || (item.href !== '/' && currentPath.startsWith(item.href))}
+			<a
+				href={item.href}
+				class="flex flex-col items-center justify-center rounded-full p-2 text-[10px] transition-colors {isActive
+					? 'font-bold text-purple-400'
+					: 'text-slate-400'}"
+			>
+				<Icon size={18} class={isActive ? 'text-purple-400' : 'text-slate-400'} />
+				<span class="mt-0.5">{item.label}</span>
+			</a>
+		{/each}
+	</nav>
 {/if}

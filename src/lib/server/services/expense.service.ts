@@ -1,8 +1,8 @@
 import { getDb } from '$lib/server/db';
-import { expenses } from '$lib/server/db/schema';
+import { companies, companyBankAccounts, expenses } from '$lib/server/db/schema';
 import { tenantFilter } from '$lib/server/db/tenant';
 import { and, desc, eq } from 'drizzle-orm';
-import type { Expense, TenantContext } from '$lib/types';
+import type { Company, CompanyBankAccount, Expense, TenantContext } from '$lib/types';
 
 export class ExpenseService {
 	constructor(private d1: D1Database) {}
@@ -16,21 +16,61 @@ export class ExpenseService {
 			.where(tenantFilter(expenses.userId, expenses.householdId, tenant))
 			.orderBy(desc(expenses.date));
 
-		return rows.map((r) => ({
-			id: r.id,
-			userId: r.userId,
-			householdId: r.householdId,
-			assetId: r.assetId,
-			category: r.category,
-			vendor: r.vendor,
-			amountCents: r.amountCents,
-			currency: r.currency,
-			date: r.date,
-			receiptUrl: r.receiptUrl,
-			rawOcrData: r.rawOcrData,
-			notes: r.notes,
-			createdAt: r.createdAt
-		}));
+		// Fetch bank accounts and companies for resolution
+		const bankMap = new Map<string, CompanyBankAccount>();
+		try {
+			const bankAccountRows = await db.select().from(companyBankAccounts);
+			for (const b of bankAccountRows) {
+				bankMap.set(b.id, {
+					id: b.id,
+					companyId: b.companyId,
+					bankName: b.bankName,
+					accountAlias: b.accountAlias,
+					accountNumber: b.accountNumber,
+					notes: b.notes
+				});
+			}
+		} catch (bankErr) {
+			console.warn('Expense bank accounts query notice:', bankErr);
+		}
+
+		const companyMap = new Map<string, Company>();
+		try {
+			const companyRows = await db.select().from(companies);
+			for (const c of companyRows) {
+				companyMap.set(c.id, {
+					id: c.id,
+					name: c.name,
+					companyType: c.companyType as Company['companyType']
+				});
+			}
+		} catch (compErr) {
+			console.warn('Companies query notice:', compErr);
+		}
+
+		return rows.map((r) => {
+			const bank = r.paidFromBankAccountId ? bankMap.get(r.paidFromBankAccountId) || null : null;
+			const comp = bank ? companyMap.get(bank.companyId) || null : null;
+
+			return {
+				id: r.id,
+				userId: r.userId,
+				householdId: r.householdId,
+				assetId: r.assetId,
+				paidFromBankAccountId: r.paidFromBankAccountId,
+				paidFromBankAccount: bank,
+				paidFromCompany: comp,
+				category: r.category,
+				vendor: r.vendor,
+				amountCents: r.amountCents,
+				currency: r.currency,
+				date: r.date,
+				receiptUrl: r.receiptUrl,
+				rawOcrData: r.rawOcrData,
+				notes: r.notes,
+				createdAt: r.createdAt
+			};
+		});
 	}
 
 	async getById(tenant: TenantContext | null | undefined, id: string): Promise<Expense | null> {
@@ -44,11 +84,50 @@ export class ExpenseService {
 
 		if (!row) return null;
 
+		let bank: CompanyBankAccount | null = null;
+		let comp: Company | null = null;
+		if (row.paidFromBankAccountId) {
+			try {
+				const [b] = await db
+					.select()
+					.from(companyBankAccounts)
+					.where(eq(companyBankAccounts.id, row.paidFromBankAccountId))
+					.limit(1);
+				if (b) {
+					bank = {
+						id: b.id,
+						companyId: b.companyId,
+						bankName: b.bankName,
+						accountAlias: b.accountAlias,
+						accountNumber: b.accountNumber,
+						notes: b.notes
+					};
+					const [c] = await db
+						.select()
+						.from(companies)
+						.where(eq(companies.id, b.companyId))
+						.limit(1);
+					if (c) {
+						comp = {
+							id: c.id,
+							name: c.name,
+							companyType: c.companyType as Company['companyType']
+						};
+					}
+				}
+			} catch (lookupErr) {
+				console.warn('Bank account lookup notice:', lookupErr);
+			}
+		}
+
 		return {
 			id: row.id,
 			userId: row.userId,
 			householdId: row.householdId,
 			assetId: row.assetId,
+			paidFromBankAccountId: row.paidFromBankAccountId,
+			paidFromBankAccount: bank,
+			paidFromCompany: comp,
 			category: row.category,
 			vendor: row.vendor,
 			amountCents: row.amountCents,
@@ -73,6 +152,7 @@ export class ExpenseService {
 			rawOcrData?: string | null;
 			notes?: string | null;
 			assetId?: string | null;
+			paidFromBankAccountId?: string | null;
 		}
 	): Promise<Expense> {
 		if (!tenant?.userId) throw new Error('Unauthenticated tenant context');
@@ -97,25 +177,12 @@ export class ExpenseService {
 				receiptUrl: data.receiptUrl || null,
 				rawOcrData: data.rawOcrData || null,
 				notes: data.notes ? data.notes.trim() : null,
-				assetId: data.assetId || null
+				assetId: data.assetId || null,
+				paidFromBankAccountId: data.paidFromBankAccountId || null
 			})
 			.returning();
 
-		return {
-			id: created.id,
-			userId: created.userId,
-			householdId: created.householdId,
-			assetId: created.assetId,
-			category: created.category,
-			vendor: created.vendor,
-			amountCents: created.amountCents,
-			currency: created.currency,
-			date: created.date,
-			receiptUrl: created.receiptUrl,
-			rawOcrData: created.rawOcrData,
-			notes: created.notes,
-			createdAt: created.createdAt
-		};
+		return this.getById(tenant, created.id) as Promise<Expense>;
 	}
 
 	async delete(tenant: TenantContext | null | undefined, id: string): Promise<boolean> {

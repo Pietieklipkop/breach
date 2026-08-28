@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { enhance } from '$app/forms';
-	import { Receipt, Eye, Trash2, Tag, X } from '@lucide/svelte';
+	import { Receipt, Eye, Trash2, Tag, X, Landmark } from '@lucide/svelte';
 	import { formatCurrency, formatDate } from '$lib/utils';
 	import type { Expense, ExpenseCategory } from '$lib/types';
 
@@ -30,6 +30,7 @@
 				<tr>
 					<th class="px-4 py-3">Vendor / Title</th>
 					<th class="px-4 py-3">Category</th>
+					<th class="px-4 py-3">Paid From</th>
 					<th class="px-4 py-3">Date</th>
 					<th class="px-4 py-3 text-right">Amount</th>
 					<th class="px-4 py-3 text-center">Receipt</th>
@@ -52,6 +53,24 @@
 								<Tag size={11} />
 								<span>{getCategoryName(exp.category)}</span>
 							</span>
+						</td>
+						<td class="px-4 py-3">
+							{#if exp.paidFromBankAccount}
+								<span
+									class="sharp-corners inline-flex items-center gap-1 border border-purple-500/30 bg-purple-500/10 px-2 py-0.5 text-[11px] font-semibold text-purple-300"
+									title={exp.paidFromCompany?.name || 'Company Account'}
+								>
+									<Landmark size={11} class="text-purple-400" />
+									<span>
+										{#if exp.paidFromCompany}
+											{exp.paidFromCompany.name} •
+										{/if}
+										{exp.paidFromBankAccount.accountAlias} ({exp.paidFromBankAccount.bankName})
+									</span>
+								</span>
+							{:else}
+								<span class="text-[11px] text-[var(--color-text-subtle)]">Personal / Default</span>
+							{/if}
 						</td>
 						<td class="px-4 py-3 font-mono text-[var(--color-text-muted)]">
 							{formatDate(exp.date)}
@@ -100,7 +119,7 @@
 					</tr>
 				{:else}
 					<tr>
-						<td colspan="6" class="px-4 py-12 text-center text-sm text-[var(--color-text-muted)]">
+						<td colspan="7" class="px-4 py-12 text-center text-sm text-[var(--color-text-muted)]">
 							No expenses found matching the active criteria.
 						</td>
 					</tr>
@@ -147,6 +166,20 @@
 					<span class="font-semibold text-[var(--color-coral)]"
 						>{getCategoryName(previewExpense.category)}</span
 					>
+				</div>
+				<div class="flex justify-between border-b border-[var(--color-dark-border)] py-1.5">
+					<span class="text-[var(--color-text-muted)]">Paid From Account:</span>
+					{#if previewExpense.paidFromBankAccount}
+						<span class="font-semibold text-purple-300">
+							{#if previewExpense.paidFromCompany}
+								{previewExpense.paidFromCompany.name} -
+							{/if}
+							{previewExpense.paidFromBankAccount.accountAlias} ({previewExpense.paidFromBankAccount
+								.bankName})
+						</span>
+					{:else}
+						<span class="text-[var(--color-text-subtle)]">Personal / Unspecified</span>
+					{/if}
 				</div>
 				{#if previewExpense.notes}
 					<div class="space-y-1 py-1.5">

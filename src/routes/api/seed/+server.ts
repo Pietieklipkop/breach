@@ -6,6 +6,7 @@ import {
 	assetActivities,
 	expenses,
 	companies,
+	companyBankAccounts,
 	invoices,
 	invoiceItems
 } from '$lib/server/db/schema';
@@ -126,9 +127,13 @@ const handleSeed = async (event: RequestEvent) => {
 					.from(companies)
 					.where(eq(companies.userId, adminUser.id));
 				if (existingCompanies.length === 0) {
+					const holdingId = `comp-holding-${adminUser.id.substring(0, 5)}`;
+					const subId = `comp-sub-${adminUser.id.substring(0, 5)}`;
+					const clientId = `comp-client-${adminUser.id.substring(0, 5)}`;
+
 					const sampleCompanies = [
 						{
-							id: `comp-holding-${adminUser.id.substring(0, 5)}`,
+							id: holdingId,
 							userId: adminUser.id,
 							name: 'Apex Holdings (Pty) Ltd',
 							regNumber: '2019/482910/07',
@@ -140,7 +145,7 @@ const handleSeed = async (event: RequestEvent) => {
 							ownershipDetails: '100% Owned by Primary Family Trust (Director: Lead Family Member)'
 						},
 						{
-							id: `comp-sub-${adminUser.id.substring(0, 5)}`,
+							id: subId,
 							userId: adminUser.id,
 							name: 'Breach Digital Solutions (Pty) Ltd',
 							regNumber: '2021/394012/07',
@@ -152,7 +157,7 @@ const handleSeed = async (event: RequestEvent) => {
 							ownershipDetails: '80% Owned by Apex Holdings (Pty) Ltd, 20% Founder Management'
 						},
 						{
-							id: `comp-client-${adminUser.id.substring(0, 5)}`,
+							id: clientId,
 							userId: adminUser.id,
 							name: 'Acme Enterprise Ventures',
 							regNumber: '2018/102938/07',
@@ -168,6 +173,31 @@ const handleSeed = async (event: RequestEvent) => {
 					for (const comp of sampleCompanies) {
 						await db.insert(companies).values(comp);
 					}
+
+					// Seed Bank Accounts
+					await db.insert(companyBankAccounts).values([
+						{
+							companyId: holdingId,
+							bankName: 'FNB',
+							accountAlias: 'Apex Treasury Cheque Account',
+							accountNumber: '62810098412',
+							notes: 'Primary holding treasury account'
+						},
+						{
+							companyId: holdingId,
+							bankName: 'Standard Bank',
+							accountAlias: 'Apex Investment Reserve Account',
+							accountNumber: '091238475',
+							notes: 'Call deposit reserve account'
+						},
+						{
+							companyId: subId,
+							bankName: 'Absa',
+							accountAlias: 'Breach Operations Account',
+							accountNumber: '4098127364',
+							notes: 'Operating expense & vendor payment account'
+						}
+					]);
 				}
 			} catch (compErr) {
 				console.warn('Companies seed notice:', compErr);

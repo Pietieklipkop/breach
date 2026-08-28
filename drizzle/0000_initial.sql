@@ -128,11 +128,23 @@ CREATE TABLE IF NOT EXISTS "asset_activities" (
   "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 );
 
+CREATE TABLE IF NOT EXISTS "company_bank_accounts" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "company_id" TEXT NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
+  "bank_name" TEXT NOT NULL,
+  "account_alias" TEXT NOT NULL,
+  "account_number" TEXT,
+  "notes" TEXT,
+  "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  "updated_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+);
+
 CREATE TABLE IF NOT EXISTS "expenses" (
   "id" TEXT PRIMARY KEY NOT NULL,
   "user_id" TEXT NOT NULL REFERENCES "user"("id") ON DELETE CASCADE,
   "household_id" TEXT REFERENCES "households"("id") ON DELETE CASCADE,
   "asset_id" TEXT REFERENCES "assets"("id") ON DELETE SET NULL,
+  "paid_from_bank_account_id" TEXT REFERENCES "company_bank_accounts"("id") ON DELETE SET NULL,
   "category" TEXT NOT NULL DEFAULT 'general',
   "vendor" TEXT NOT NULL,
   "amount_cents" INTEGER NOT NULL,
@@ -155,3 +167,71 @@ CREATE TABLE IF NOT EXISTS "receipt_documents" (
   "parsed_data" TEXT,
   "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
 );
+
+CREATE TABLE IF NOT EXISTS "expense_categories" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "user_id" TEXT REFERENCES "user"("id") ON DELETE CASCADE,
+  "household_id" TEXT REFERENCES "households"("id") ON DELETE CASCADE,
+  "name" TEXT NOT NULL,
+  "slug" TEXT NOT NULL,
+  "icon" TEXT DEFAULT 'Tag',
+  "color" TEXT DEFAULT 'coral',
+  "keywords" TEXT DEFAULT '',
+  "is_default" INTEGER NOT NULL DEFAULT 0,
+  "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  "updated_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+);
+
+CREATE TABLE IF NOT EXISTS "companies" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "user_id" TEXT REFERENCES "user"("id") ON DELETE CASCADE,
+  "household_id" TEXT REFERENCES "households"("id") ON DELETE CASCADE,
+  "name" TEXT NOT NULL,
+  "reg_number" TEXT,
+  "tax_number" TEXT,
+  "company_type" TEXT NOT NULL DEFAULT 'subsidiary',
+  "address" TEXT,
+  "email" TEXT,
+  "phone" TEXT,
+  "ownership_details" TEXT,
+  "logo_url" TEXT,
+  "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+  "updated_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+);
+
+CREATE TABLE IF NOT EXISTS "company_documents" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "company_id" TEXT NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
+  "title" TEXT NOT NULL,
+  "document_type" TEXT DEFAULT 'general',
+  "file_url" TEXT NOT NULL,
+  "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+);
+
+CREATE TABLE IF NOT EXISTS "invoices" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "user_id" TEXT REFERENCES "user"("id") ON DELETE CASCADE,
+  "household_id" TEXT REFERENCES "households"("id") ON DELETE CASCADE,
+  "invoice_number" TEXT NOT NULL,
+  "from_company_id" TEXT REFERENCES "companies"("id") ON DELETE SET NULL,
+  "to_company_id" TEXT REFERENCES "companies"("id") ON DELETE SET NULL,
+  "issue_date" INTEGER NOT NULL,
+  "due_date" INTEGER NOT NULL,
+  "status" TEXT DEFAULT 'draft',
+  "subtotal_cents" INTEGER NOT NULL DEFAULT 0,
+  "vat_cents" INTEGER NOT NULL DEFAULT 0,
+  "total_cents" INTEGER NOT NULL DEFAULT 0,
+  "notes" TEXT,
+  "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+);
+
+CREATE TABLE IF NOT EXISTS "invoice_items" (
+  "id" TEXT PRIMARY KEY NOT NULL,
+  "invoice_id" TEXT NOT NULL REFERENCES "invoices"("id") ON DELETE CASCADE,
+  "expense_id" TEXT REFERENCES "expenses"("id") ON DELETE SET NULL,
+  "description" TEXT NOT NULL,
+  "category" TEXT DEFAULT 'general',
+  "amount_cents" INTEGER NOT NULL,
+  "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+);
+

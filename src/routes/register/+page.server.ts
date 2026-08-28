@@ -1,7 +1,12 @@
 import { fail, redirect, isRedirect, type RequestEvent } from '@sveltejs/kit';
 import { APIError } from 'better-auth/api';
 import { getDb } from '$lib/server/db';
-import { householdInvites, householdMembers, households } from '$lib/server/db/schema';
+import {
+	householdInvites,
+	householdMembers,
+	households,
+	userProfiles
+} from '$lib/server/db/schema';
 import { eq } from 'drizzle-orm';
 
 export const load = async (event: RequestEvent) => {
@@ -49,56 +54,95 @@ export const actions = {
 		const d1 = platform?.env?.DB;
 
 		const formData = await event.request.formData();
-		const name = formData.get('name')?.toString().trim() ?? '';
+		const firstName = formData.get('firstName')?.toString().trim() ?? '';
+		const surname = formData.get('surname')?.toString().trim() ?? '';
 		const email = formData.get('email')?.toString().trim().toLowerCase() ?? '';
+		const householdName = formData.get('householdName')?.toString().trim() ?? '';
 		const password = formData.get('password')?.toString() ?? '';
 		const confirmPassword = formData.get('confirmPassword')?.toString() ?? '';
 		const inviteToken = formData.get('inviteToken')?.toString() ?? '';
 
-		if (!name || !email || !password) {
-			return fail(400, { message: 'Please fill in all required fields.' });
+		if (!firstName || !surname || !email || !password || (!inviteToken && !householdName)) {
+			return fail(400, {
+				message:
+					'Please fill in all required fields (Name, Surname, Email, Household Name, and Password).'
+			});
 		}
 
 		if (password !== confirmPassword) {
 			return fail(400, { message: 'Passwords do not match.' });
 		}
 
-		if (password.length < 6) {
-			return fail(400, { message: 'Password must be at least 6 characters long.' });
-		}
+		const fullName = `${firstName} ${surname}`.trim();
 
 		try {
 			const res = await auth.api.signUpEmail({
 				body: {
-					name,
+					name: fullName,
 					email,
 					password
 				},
 				headers: event.request.headers
 			});
 
-			// Process household invitation token if available
-			if (inviteToken && d1 && res?.user?.id) {
+			if (d1 && res?.user?.id) {
 				const db = getDb(d1);
 
-				const inviteRecords = await db
-					.select()
-					.from(householdInvites)
-					.where(eq(householdInvites.token, inviteToken));
+				if (inviteToken) {
+					// Process household invitation token if available
+					const inviteRecords = await db
+						.select()
+						.from(householdInvites)
+						.where(eq(householdInvites.token, inviteToken));
 
-				if (inviteRecords.length > 0) {
-					const inv = inviteRecords[0];
+					if (inviteRecords.length > 0) {
+						const inv = inviteRecords[0];
 
-					// Add user as member of the invited household
+						// Add user as member of the invited household
+						await db.insert(householdMembers).values({
+							householdId: inv.householdId,
+							userId: res.user.id,
+							role: inv.role as 'admin' | 'member',
+							isMain: 1
+						});
+
+						// Create user profile record
+						await db
+							.insert(userProfiles)
+							.values({
+								userId: res.user.id,
+								householdName: householdName || 'My Household'
+							})
+							.onConflictDoNothing();
+
+						// Delete consumed invite
+						await db.delete(householdInvites).where(eq(householdInvites.token, inviteToken));
+					}
+				} else {
+					// Create a new household for the registered user
+					const newHouseholdId = crypto.randomUUID();
+					const finalHouseholdName = householdName || `${surname} Household`;
+
+					await db.insert(households).values({
+						id: newHouseholdId,
+						name: finalHouseholdName,
+						createdByUserId: res.user.id
+					});
+
 					await db.insert(householdMembers).values({
-						householdId: inv.householdId,
+						householdId: newHouseholdId,
 						userId: res.user.id,
-						role: inv.role as 'admin' | 'member',
+						role: 'owner',
 						isMain: 1
 					});
 
-					// Delete consumed invite
-					await db.delete(householdInvites).where(eq(householdInvites.token, inviteToken));
+					await db
+						.insert(userProfiles)
+						.values({
+							userId: res.user.id,
+							householdName: finalHouseholdName
+						})
+						.onConflictDoNothing();
 				}
 			}
 

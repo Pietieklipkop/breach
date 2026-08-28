@@ -3,7 +3,7 @@
 	import { SvelteMap } from 'svelte/reactivity';
 	import { Sparkles, Receipt, CalendarDays, DollarSign } from '@lucide/svelte';
 	import { formatCurrency } from '$lib/utils';
-	import type { Expense, ExpenseCategory } from '$lib/types';
+	import type { Company, Expense, ExpenseCategory } from '$lib/types';
 	import SpendingPieChart, {
 		type SpendingCategoryItem
 	} from '$lib/components/SpendingPieChart.svelte';
@@ -14,13 +14,15 @@
 	interface PageData {
 		expenses: Expense[];
 		categories: ExpenseCategory[];
+		companies?: Company[];
 	}
 
 	let { data }: { data: PageData } = $props();
 
-	// All expenses and categories flow directly from SvelteKit load data
+	// All expenses, categories, and companies flow directly from SvelteKit load data
 	let expensesList = $derived(data.expenses || []);
 	let categoriesList = $derived(data.categories || []);
+	let companiesList = $derived(data.companies || []);
 
 	// Filter & View State
 	let timeFilter = $state<'current_month' | 'all' | 'last_30'>('last_30');
@@ -312,5 +314,10 @@
 	<ExpenseTable expenses={filteredExpenses} categories={categoriesList} />
 
 	<!-- Add Expense Modal Component -->
-	<ExpenseFormModal isOpen={isScanModalOpen} categories={categoriesList} onclose={closeScanModal} />
+	<ExpenseFormModal
+		isOpen={isScanModalOpen}
+		categories={categoriesList}
+		companies={companiesList}
+		onclose={closeScanModal}
+	/>
 </div>

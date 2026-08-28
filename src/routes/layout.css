@@ -61,6 +61,17 @@
 }
 
 /* 1. Rounded Container & Pill Utilities */
+.mobile-bottom-nav {
+	position: fixed !important;
+	bottom: max(0.75rem, env(safe-area-inset-bottom, 0.75rem)) !important;
+	left: 0.75rem !important;
+	right: 0.75rem !important;
+	z-index: 9999 !important;
+	transform: translateZ(0) !important;
+	-webkit-transform: translateZ(0) !important;
+	will-change: transform;
+}
+
 .sharp-corners {
 	border-radius: 1rem !important;
 }

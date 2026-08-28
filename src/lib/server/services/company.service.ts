@@ -1,8 +1,14 @@
 import { getDb } from '$lib/server/db';
-import { companies, companyDocuments } from '$lib/server/db/schema';
+import { companies, companyBankAccounts, companyDocuments } from '$lib/server/db/schema';
 import { tenantFilter } from '$lib/server/db/tenant';
-import { and, eq, desc } from 'drizzle-orm';
-import type { Company, CompanyDocument, CompanyType, TenantContext } from '$lib/types';
+import { and, eq, desc, sql } from 'drizzle-orm';
+import type {
+	Company,
+	CompanyBankAccount,
+	CompanyDocument,
+	CompanyType,
+	TenantContext
+} from '$lib/types';
 
 export class CompanyService {
 	constructor(private d1: D1Database) {}
@@ -35,6 +41,28 @@ export class CompanyService {
 			docMap.set(doc.companyId, list);
 		}
 
+		// Fetch bank accounts for all fetched companies
+		const bankMap = new Map<string, CompanyBankAccount[]>();
+		try {
+			const bankRows = await db.select().from(companyBankAccounts);
+			for (const b of bankRows) {
+				const list = bankMap.get(b.companyId) || [];
+				list.push({
+					id: b.id,
+					companyId: b.companyId,
+					bankName: b.bankName,
+					accountAlias: b.accountAlias,
+					accountNumber: b.accountNumber,
+					notes: b.notes,
+					createdAt: b.createdAt,
+					updatedAt: b.updatedAt
+				});
+				bankMap.set(b.companyId, list);
+			}
+		} catch (bankErr) {
+			console.warn('Company bank accounts fetch notice:', bankErr);
+		}
+
 		return companyRows.map((c) => ({
 			id: c.id,
 			userId: c.userId,
@@ -49,6 +77,7 @@ export class CompanyService {
 			ownershipDetails: c.ownershipDetails,
 			logoUrl: c.logoUrl,
 			documents: docMap.get(c.id) || [],
+			bankAccounts: bankMap.get(c.id) || [],
 			createdAt: c.createdAt,
 			updatedAt: c.updatedAt
 		}));
@@ -70,6 +99,16 @@ export class CompanyService {
 
 		const docs = await db.select().from(companyDocuments).where(eq(companyDocuments.companyId, id));
 
+		let banks: (typeof companyBankAccounts.$inferSelect)[] = [];
+		try {
+			banks = await db
+				.select()
+				.from(companyBankAccounts)
+				.where(eq(companyBankAccounts.companyId, id));
+		} catch (bankErr) {
+			console.warn('Company bank accounts fetch notice in getById:', bankErr);
+		}
+
 		return {
 			id: company.id,
 			userId: company.userId,
@@ -90,6 +129,16 @@ export class CompanyService {
 				documentType: d.documentType,
 				fileUrl: d.fileUrl,
 				createdAt: d.createdAt
+			})),
+			bankAccounts: banks.map((b) => ({
+				id: b.id,
+				companyId: b.companyId,
+				bankName: b.bankName,
+				accountAlias: b.accountAlias,
+				accountNumber: b.accountNumber,
+				notes: b.notes,
+				createdAt: b.createdAt,
+				updatedAt: b.updatedAt
 			})),
 			createdAt: company.createdAt,
 			updatedAt: company.updatedAt
@@ -144,6 +193,7 @@ export class CompanyService {
 			ownershipDetails: created.ownershipDetails,
 			logoUrl: created.logoUrl,
 			documents: [],
+			bankAccounts: [],
 			createdAt: created.createdAt,
 			updatedAt: created.updatedAt
 		};
@@ -253,6 +303,96 @@ export class CompanyService {
 		const [deleted] = await db
 			.delete(companyDocuments)
 			.where(and(eq(companyDocuments.id, docId), eq(companyDocuments.companyId, companyId)))
+			.returning();
+
+		return !!deleted;
+	}
+
+	async addBankAccount(
+		tenant: TenantContext | null | undefined,
+		companyId: string,
+		account: { bankName: string; accountAlias: string; accountNumber?: string; notes?: string }
+	): Promise<CompanyBankAccount | null> {
+		if (!tenant?.userId) throw new Error('Unauthenticated tenant context');
+		const company = await this.getById(tenant, companyId);
+		if (!company) return null;
+
+		const db = getDb(this.d1);
+		let created: typeof companyBankAccounts.$inferSelect | undefined;
+
+		try {
+			const [res] = await db
+				.insert(companyBankAccounts)
+				.values({
+					companyId,
+					bankName: account.bankName.trim(),
+					accountAlias: account.accountAlias.trim(),
+					accountNumber: account.accountNumber ? account.accountNumber.trim() : null,
+					notes: account.notes ? account.notes.trim() : null
+				})
+				.returning();
+			created = res;
+		} catch (insertErr) {
+			console.warn('Retrying bank account creation after auto-creating table:', insertErr);
+			try {
+				await db.run(sql`
+          CREATE TABLE IF NOT EXISTS "company_bank_accounts" (
+            "id" TEXT PRIMARY KEY NOT NULL,
+            "company_id" TEXT NOT NULL REFERENCES "companies"("id") ON DELETE CASCADE,
+            "bank_name" TEXT NOT NULL,
+            "account_alias" TEXT NOT NULL,
+            "account_number" TEXT,
+            "notes" TEXT,
+            "created_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer)),
+            "updated_at" INTEGER NOT NULL DEFAULT (cast(unixepoch('subsecond') * 1000 as integer))
+          );
+        `);
+				const [res] = await db
+					.insert(companyBankAccounts)
+					.values({
+						companyId,
+						bankName: account.bankName.trim(),
+						accountAlias: account.accountAlias.trim(),
+						accountNumber: account.accountNumber ? account.accountNumber.trim() : null,
+						notes: account.notes ? account.notes.trim() : null
+					})
+					.returning();
+				created = res;
+			} catch (retryErr) {
+				console.error('Auto-table creation failed:', retryErr);
+				throw insertErr;
+			}
+		}
+
+		if (!created) return null;
+
+		return {
+			id: created.id,
+			companyId: created.companyId,
+			bankName: created.bankName,
+			accountAlias: created.accountAlias,
+			accountNumber: created.accountNumber,
+			notes: created.notes,
+			createdAt: created.createdAt,
+			updatedAt: created.updatedAt
+		};
+	}
+
+	async deleteBankAccount(
+		tenant: TenantContext | null | undefined,
+		companyId: string,
+		bankAccountId: string
+	): Promise<boolean> {
+		if (!tenant?.userId) throw new Error('Unauthenticated tenant context');
+		const company = await this.getById(tenant, companyId);
+		if (!company) return false;
+
+		const db = getDb(this.d1);
+		const [deleted] = await db
+			.delete(companyBankAccounts)
+			.where(
+				and(eq(companyBankAccounts.id, bankAccountId), eq(companyBankAccounts.companyId, companyId))
+			)
 			.returning();
 
 		return !!deleted;

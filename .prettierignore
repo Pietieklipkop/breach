@@ -6,3 +6,4 @@ dist
 coverage
 test-results
 pnpm-lock.yaml
+worker-configuration.d.ts

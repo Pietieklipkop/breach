@@ -454,18 +454,34 @@
 		}
 	}
 
-	async function handleDeleteCompany(id: string, name: string) {
-		if (!confirm(`Are you sure you want to delete company "${name}"?`)) return;
+	async function handleDeleteCompany(id: string, name: string, force = false) {
+		if (!force && !confirm(`Are you sure you want to delete company "${name}"?`)) return;
 		masterDataStatus = null;
 
 		try {
 			const res = await fetch('/api/companies', {
 				method: 'DELETE',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id })
+				body: JSON.stringify({ id, force })
 			});
 
-			const result = (await res.json()) as { success?: boolean; error?: string };
+			const result = (await res.json()) as {
+				success?: boolean;
+				error?: string;
+				requiresConfirmation?: boolean;
+				message?: string;
+			};
+
+			if (res.status === 409 && result.requiresConfirmation) {
+				const confirmCascade = confirm(
+					`WARNING: "${name}" has linked expenses, assets, or invoices!\n\n${result.message}\n\nDo you want to PERMANENTLY delete "${name}" AND everything it is linked to?`
+				);
+				if (confirmCascade) {
+					return handleDeleteCompany(id, name, true);
+				}
+				return;
+			}
+
 			if (!res.ok || !result.success) {
 				throw new Error(result.error || 'Failed to delete company');
 			}
@@ -1371,6 +1387,7 @@
 										<button
 											type="button"
 											onclick={() => openEditCompanyModal(comp)}
+											title="Edit company"
 											class="p-1.5 text-[var(--color-text-muted)] hover:text-white"
 										>
 											<Edit3 size={14} />
@@ -1378,6 +1395,7 @@
 										<button
 											type="button"
 											onclick={() => handleDeleteCompany(comp.id, comp.name)}
+											title="Delete company"
 											class="p-1.5 text-[var(--color-text-muted)] hover:text-red-400"
 										>
 											<Trash2 size={14} />

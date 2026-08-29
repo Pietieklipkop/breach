@@ -48,11 +48,6 @@
 					class="flex items-center gap-2 font-serif text-xl font-bold tracking-tight text-white"
 				>
 					<span>Insighta</span>
-					<span
-						class="rounded-full border border-purple-500/30 bg-purple-500/20 px-2 py-0.5 font-sans text-[10px] font-bold tracking-wider text-purple-400 uppercase"
-					>
-						AI Overview
-					</span>
 				</a>
 			</div>
 

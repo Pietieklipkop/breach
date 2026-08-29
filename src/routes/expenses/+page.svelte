@@ -205,17 +205,7 @@
 		class="flex flex-col justify-between gap-4 border-b border-[var(--color-dark-border)] pb-6 md:flex-row md:items-center"
 	>
 		<div>
-			<div class="mb-1 flex items-center gap-2">
-				<span
-					class="sharp-corners bg-[var(--color-coral-light)] px-2 py-0.5 text-xs font-semibold tracking-wider text-[var(--color-coral)] uppercase"
-				>
-					Financial Management
-				</span>
-			</div>
 			<h1 class="font-serif text-3xl font-bold text-white md:text-4xl">Household Expenses</h1>
-			<p class="mt-1 text-sm text-[var(--color-text-muted)]">
-				Scan paper receipts, track spending categories, and analyze monthly cashflow.
-			</p>
 		</div>
 
 		<div class="flex items-center gap-3">
@@ -230,7 +220,7 @@
 	</div>
 
 	<!-- Top Metric Summary Cards -->
-	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+	<div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
 		<div
 			class="sharp-corners space-y-1 border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-4"
 		>
@@ -263,21 +253,6 @@
 			<p class="text-[10px] text-[var(--color-text-subtle)]">
 				{expensesList.length} total receipts recorded
 			</p>
-		</div>
-
-		<div
-			class="sharp-corners space-y-1 border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-4"
-		>
-			<div
-				class="flex items-center justify-between text-[10px] font-bold tracking-wider text-[var(--color-text-muted)] uppercase"
-			>
-				<span>Active Categories</span>
-				<CalendarDays size={14} class="text-sky-400" />
-			</div>
-			<p class="font-mono text-xl font-bold text-white">
-				{categoriesList.length} Categories
-			</p>
-			<p class="text-[10px] text-[var(--color-text-subtle)]">Configured in Master Data</p>
 		</div>
 	</div>
 

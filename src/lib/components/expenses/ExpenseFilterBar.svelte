@@ -45,11 +45,11 @@
 		class="sharp-corners flex flex-col items-stretch justify-between gap-4 border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-4 md:flex-row md:items-center"
 	>
 		<!-- Time Scope Toggle Pills -->
-		<div class="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
+		<div class="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
 			<button
 				type="button"
 				onclick={() => (timeFilter = 'last_30')}
-				class="sharp-corners px-3.5 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors {timeFilter ===
+				class="sharp-corners flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors text-center {timeFilter ===
 				'last_30'
 					? 'bg-[var(--color-coral)] text-white'
 					: 'bg-[var(--color-dark-card)] text-[var(--color-text-muted)] hover:text-white'}"
@@ -59,7 +59,7 @@
 			<button
 				type="button"
 				onclick={() => (timeFilter = 'current_month')}
-				class="sharp-corners px-3.5 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors {timeFilter ===
+				class="sharp-corners flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors text-center {timeFilter ===
 				'current_month'
 					? 'bg-[var(--color-coral)] text-white'
 					: 'bg-[var(--color-dark-card)] text-[var(--color-text-muted)] hover:text-white'}"
@@ -69,7 +69,7 @@
 			<button
 				type="button"
 				onclick={() => (timeFilter = 'all')}
-				class="sharp-corners px-3.5 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors {timeFilter ===
+				class="sharp-corners flex-1 sm:flex-none px-3 py-1.5 text-xs font-semibold tracking-wider uppercase transition-colors text-center {timeFilter ===
 				'all'
 					? 'bg-[var(--color-coral)] text-white'
 					: 'bg-[var(--color-dark-card)] text-[var(--color-text-muted)] hover:text-white'}"
@@ -79,10 +79,10 @@
 		</div>
 
 		<!-- Category & Search Bar -->
-		<div class="flex flex-1 items-center gap-2 md:max-w-md">
+		<div class="flex flex-wrap sm:flex-nowrap w-full items-center gap-2 md:max-w-md">
 			<select
 				bind:value={selectedCategory}
-				class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-3 py-2 text-xs font-semibold text-white capitalize focus:outline-hidden"
+				class="sharp-corners w-full sm:w-auto border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-3 py-2 text-xs font-semibold text-white capitalize focus:outline-hidden"
 			>
 				<option value="all">All Categories</option>
 				{#each categories as cat (cat.id || cat.slug)}
@@ -90,7 +90,7 @@
 				{/each}
 			</select>
 
-			<div class="relative flex-1">
+			<div class="relative flex-1 min-w-[140px] w-full">
 				<Search
 					size={14}
 					class="absolute top-1/2 left-3 -translate-y-1/2 text-[var(--color-text-subtle)]"
@@ -103,29 +103,31 @@
 				/>
 			</div>
 
-			<button
-				type="button"
-				onclick={() => (isFilterExpanded = !isFilterExpanded)}
-				class="sharp-corners flex items-center gap-1 border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-2.5 py-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-white"
-			>
-				<Filter size={14} />
-				{#if isFilterExpanded}
-					<ChevronUp size={14} />
-				{:else}
-					<ChevronDown size={14} />
-				{/if}
-			</button>
-
-			{#if isFiltered}
+			<div class="flex items-center gap-1.5 shrink-0">
 				<button
 					type="button"
-					onclick={onclear}
-					class="sharp-corners flex items-center gap-1 bg-red-500/20 px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/30"
-					title="Reset all filters"
+					onclick={() => (isFilterExpanded = !isFilterExpanded)}
+					class="sharp-corners flex items-center gap-1 border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] px-2.5 py-2 text-xs font-semibold text-[var(--color-text-muted)] hover:text-white"
 				>
-					<RotateCcw size={14} />
+					<Filter size={14} />
+					{#if isFilterExpanded}
+						<ChevronUp size={14} />
+					{:else}
+						<ChevronDown size={14} />
+					{/if}
 				</button>
-			{/if}
+
+				{#if isFiltered}
+					<button
+						type="button"
+						onclick={onclear}
+						class="sharp-corners flex items-center gap-1 bg-red-500/20 px-2.5 py-2 text-xs font-semibold text-red-400 hover:bg-red-500/30"
+						title="Reset all filters"
+					>
+						<RotateCcw size={14} />
+					</button>
+				{/if}
+			</div>
 		</div>
 	</div>
 

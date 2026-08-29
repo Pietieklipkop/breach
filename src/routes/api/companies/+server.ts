@@ -196,8 +196,21 @@ export const DELETE: RequestHandler = async (event) => {
 		}
 
 		if (id) {
-			const deleted = await companyService.delete(tenant, id);
-			if (!deleted) {
+			const force = Boolean(rawBody.force);
+			const result = await companyService.delete(tenant, id, force);
+			if (result.requiresConfirmation) {
+				return json(
+					{
+						warning: true,
+						requiresConfirmation: true,
+						linked: result.linked,
+						message:
+							'This company has linked expenses, assets, or invoices. Permission required to delete the company and everything linked to it.'
+					},
+					{ status: 409 }
+				);
+			}
+			if (!result.success) {
 				return json({ error: 'Company not found or access denied' }, { status: 404 });
 			}
 			return json({ success: true });

@@ -32,27 +32,37 @@ export const load: PageServerLoad = async ({ locals, platform }) => {
 		};
 	}
 
-	const db = getDb(d1);
-	const categories = await getOrSeedExpenseCategories(
-		db,
-		locals.tenant.activeHouseholdId,
-		locals.tenant.userId
-	);
+	try {
+		const db = getDb(d1);
+		const categories = await getOrSeedExpenseCategories(
+			db,
+			locals.tenant.activeHouseholdId,
+			locals.tenant.userId
+		);
 
-	const expenseService = new ExpenseService(d1);
-	const companyService = new CompanyService(d1);
+		const expenseService = new ExpenseService(d1);
+		const companyService = new CompanyService(d1);
 
-	const [expenses, companies] = await Promise.all([
-		expenseService.list(locals.tenant),
-		companyService.list(locals.tenant)
-	]);
+		const [expenses, companies] = await Promise.all([
+			expenseService.list(locals.tenant),
+			companyService.list(locals.tenant)
+		]);
 
-	return {
-		expenses,
-		categories,
-		companies,
-		user: currentUser
-	};
+		return {
+			expenses,
+			categories,
+			companies,
+			user: currentUser
+		};
+	} catch (err) {
+		console.error('Error loading expenses page:', err);
+		return {
+			expenses: [],
+			categories: defaultCategories,
+			companies: [],
+			user: currentUser
+		};
+	}
 };
 
 export const actions: Actions = {
@@ -91,6 +101,37 @@ export const actions: Actions = {
 		});
 
 		return { success: true };
+	},
+
+	update: async ({ request, locals, platform }) => {
+		if (!locals.user || !locals.tenant) return fail(401, { error: 'Unauthorized' });
+
+		const d1 = platform?.env?.DB;
+		if (!d1) return fail(500, { error: 'Database unavailable' });
+
+		const formData = await request.formData();
+		const formEntries = Object.fromEntries(formData.entries());
+		const id = formEntries.id as string;
+		if (!id) return fail(400, { error: 'Expense ID required' });
+
+		const amountFloat = formEntries.amount ? parseFloat(formEntries.amount as string) : undefined;
+		const amountCents = amountFloat !== undefined && !isNaN(amountFloat) ? Math.round(amountFloat * 100) : undefined;
+
+		const updateData: Record<string, unknown> = {};
+		if (formEntries.vendor) updateData.vendor = (formEntries.vendor as string).trim();
+		if (amountCents !== undefined) updateData.amountCents = amountCents;
+		if (formEntries.category) updateData.category = formEntries.category as string;
+		if (formEntries.date) updateData.date = new Date(formEntries.date as string);
+		if (formEntries.notes !== undefined) updateData.notes = formEntries.notes as string;
+
+		const expenseService = new ExpenseService(d1);
+		const updated = await expenseService.update(locals.tenant, id, updateData);
+
+		if (!updated) {
+			return fail(404, { error: 'Expense not found or access denied' });
+		}
+
+		return { success: true, expense: updated };
 	},
 
 	delete: async ({ request, locals, platform }) => {

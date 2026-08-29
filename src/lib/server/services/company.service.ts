@@ -1,7 +1,7 @@
 import { getDb } from '$lib/server/db';
-import { companies, companyBankAccounts, companyDocuments } from '$lib/server/db/schema';
+import { companies, companyBankAccounts, companyDocuments, invoices, expenses } from '$lib/server/db/schema';
 import { tenantFilter } from '$lib/server/db/tenant';
-import { and, eq, desc, sql } from 'drizzle-orm';
+import { and, eq, desc, sql, or, inArray } from 'drizzle-orm';
 import type {
 	Company,
 	CompanyBankAccount,
@@ -17,70 +17,79 @@ export class CompanyService {
 		if (!tenant?.userId) return [];
 		const db = getDb(this.d1);
 
-		const companyRows = await db
-			.select()
-			.from(companies)
-			.where(tenantFilter(companies.userId, companies.householdId, tenant))
-			.orderBy(desc(companies.createdAt));
-
-		if (companyRows.length === 0) return [];
-
-		// Fetch documents for all fetched companies
-		const docRows = await db.select().from(companyDocuments);
-		const docMap = new Map<string, CompanyDocument[]>();
-		for (const doc of docRows) {
-			const list = docMap.get(doc.companyId) || [];
-			list.push({
-				id: doc.id,
-				companyId: doc.companyId,
-				title: doc.title,
-				documentType: doc.documentType,
-				fileUrl: doc.fileUrl,
-				createdAt: doc.createdAt
-			});
-			docMap.set(doc.companyId, list);
-		}
-
-		// Fetch bank accounts for all fetched companies
-		const bankMap = new Map<string, CompanyBankAccount[]>();
 		try {
-			const bankRows = await db.select().from(companyBankAccounts);
-			for (const b of bankRows) {
-				const list = bankMap.get(b.companyId) || [];
-				list.push({
-					id: b.id,
-					companyId: b.companyId,
-					bankName: b.bankName,
-					accountAlias: b.accountAlias,
-					accountNumber: b.accountNumber,
-					notes: b.notes,
-					createdAt: b.createdAt,
-					updatedAt: b.updatedAt
-				});
-				bankMap.set(b.companyId, list);
-			}
-		} catch (bankErr) {
-			console.warn('Company bank accounts fetch notice:', bankErr);
-		}
+			const companyRows = await db
+				.select()
+				.from(companies)
+				.where(tenantFilter(companies.userId, companies.householdId, tenant))
+				.orderBy(desc(companies.createdAt));
 
-		return companyRows.map((c) => ({
-			id: c.id,
-			userId: c.userId,
-			householdId: c.householdId,
-			name: c.name,
-			regNumber: c.regNumber,
-			taxNumber: c.taxNumber,
-			companyType: c.companyType as CompanyType,
-			address: c.address,
-			email: c.email,
-			phone: c.phone,
-			ownershipDetails: c.ownershipDetails,
-			logoUrl: c.logoUrl,
-			documents: docMap.get(c.id) || [],
-			bankAccounts: bankMap.get(c.id) || [],
-			createdAt: c.createdAt,
-			updatedAt: c.updatedAt
-		}));
+			if (companyRows.length === 0) return [];
+
+			// Fetch documents for all fetched companies
+			const docMap = new Map<string, CompanyDocument[]>();
+			try {
+				const docRows = await db.select().from(companyDocuments);
+				for (const doc of docRows) {
+					const list = docMap.get(doc.companyId) || [];
+					list.push({
+						id: doc.id,
+						companyId: doc.companyId,
+						title: doc.title,
+						documentType: doc.documentType,
+						fileUrl: doc.fileUrl,
+						createdAt: doc.createdAt
+					});
+					docMap.set(doc.companyId, list);
+				}
+			} catch (docErr) {
+				console.warn('Company documents fetch notice:', docErr);
+			}
+
+			// Fetch bank accounts for all fetched companies
+			const bankMap = new Map<string, CompanyBankAccount[]>();
+			try {
+				const bankRows = await db.select().from(companyBankAccounts);
+				for (const b of bankRows) {
+					const list = bankMap.get(b.companyId) || [];
+					list.push({
+						id: b.id,
+						companyId: b.companyId,
+						bankName: b.bankName,
+						accountAlias: b.accountAlias,
+						accountNumber: b.accountNumber,
+						notes: b.notes,
+						createdAt: b.createdAt,
+						updatedAt: b.updatedAt
+					});
+					bankMap.set(b.companyId, list);
+				}
+			} catch (bankErr) {
+				console.warn('Company bank accounts fetch notice:', bankErr);
+			}
+
+			return companyRows.map((c) => ({
+				id: c.id,
+				userId: c.userId,
+				householdId: c.householdId,
+				name: c.name,
+				regNumber: c.regNumber,
+				taxNumber: c.taxNumber,
+				companyType: c.companyType as CompanyType,
+				address: c.address,
+				email: c.email,
+				phone: c.phone,
+				ownershipDetails: c.ownershipDetails,
+				logoUrl: c.logoUrl,
+				documents: docMap.get(c.id) || [],
+				bankAccounts: bankMap.get(c.id) || [],
+				createdAt: c.createdAt,
+				updatedAt: c.updatedAt
+			}));
+		} catch (err) {
+			console.error('CompanyService list error:', err);
+			return [];
+		}
 	}
 
 	async getById(tenant: TenantContext | null | undefined, id: string): Promise<Company | null> {
@@ -248,16 +257,94 @@ export class CompanyService {
 		return this.getById(tenant, id);
 	}
 
-	async delete(tenant: TenantContext | null | undefined, id: string): Promise<boolean> {
+	async checkLinkedEntities(
+		tenant: TenantContext | null | undefined,
+		id: string
+	): Promise<{ invoicesCount: number; expensesCount: number; bankAccountsCount: number }> {
+		if (!tenant?.userId) return { invoicesCount: 0, expensesCount: 0, bankAccountsCount: 0 };
+		const db = getDb(this.d1);
+
+		let invoicesCount = 0;
+		try {
+			const invs = await db
+				.select()
+				.from(invoices)
+				.where(or(eq(invoices.fromCompanyId, id), eq(invoices.toCompanyId, id)));
+			invoicesCount = invs.length;
+		} catch (e) {
+			console.warn('Check invoices notice:', e);
+		}
+
+		let bankAccountsCount = 0;
+		let expensesCount = 0;
+		try {
+			const banks = await db
+				.select()
+				.from(companyBankAccounts)
+				.where(eq(companyBankAccounts.companyId, id));
+			bankAccountsCount = banks.length;
+
+			if (banks.length > 0) {
+				const bankIds = banks.map((b) => b.id);
+				const exps = await db
+					.select()
+					.from(expenses)
+					.where(inArray(expenses.paidFromBankAccountId, bankIds));
+				expensesCount = exps.length;
+			}
+		} catch (e) {
+			console.warn('Check bank accounts & expenses notice:', e);
+		}
+
+		return { invoicesCount, expensesCount, bankAccountsCount };
+	}
+
+	async delete(
+		tenant: TenantContext | null | undefined,
+		id: string,
+		force = false
+	): Promise<{ success: boolean; requiresConfirmation?: boolean; linked?: Record<string, number> }> {
 		if (!tenant?.userId) throw new Error('Unauthenticated tenant context');
 		const db = getDb(this.d1);
+
+		if (!force) {
+			const linked = await this.checkLinkedEntities(tenant, id);
+			const totalLinked = linked.invoicesCount + linked.expensesCount;
+			if (totalLinked > 0) {
+				return {
+					success: false,
+					requiresConfirmation: true,
+					linked: {
+						invoices: linked.invoicesCount,
+						expenses: linked.expensesCount,
+						bankAccounts: linked.bankAccountsCount
+					}
+				};
+			}
+		}
+
+		// Delete company documents
+		try {
+			await db.delete(companyDocuments).where(eq(companyDocuments.companyId, id));
+		} catch (e) {
+			console.warn('Delete company docs notice:', e);
+		}
+
+		// Delete company bank accounts
+		try {
+			await db.delete(companyBankAccounts).where(eq(companyBankAccounts.companyId, id));
+		} catch (e) {
+			console.warn('Delete company bank accounts notice:', e);
+		}
+
 		const [deleted] = await db
 			.delete(companies)
 			.where(
 				and(eq(companies.id, id), tenantFilter(companies.userId, companies.householdId, tenant))
 			)
 			.returning();
-		return !!deleted;
+
+		return { success: !!deleted };
 	}
 
 	async addDocument(

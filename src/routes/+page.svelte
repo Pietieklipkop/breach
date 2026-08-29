@@ -231,25 +231,52 @@
 
 		return feed.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 8);
 	});
+
+	// Today's Spending calculation
+	let todaySpendCents = $derived.by(() => {
+		const todayStr = toISODateString(new Date());
+		let sum = 0;
+		for (const exp of expensesList) {
+			if (toISODateString(exp.createdAt || exp.date) === todayStr) {
+				sum += exp.amountCents;
+			}
+		}
+		for (const act of activitiesList) {
+			if (toISODateString(act.createdAt || act.date) === todayStr) {
+				sum += act.costCents;
+			}
+		}
+		return sum;
+	});
+
+	// Monthly Expenses calculation (accumulates total spend this month across all categories)
+	let thisMonthSpendCents = $derived.by(() => {
+		const now = new Date();
+		const curYear = now.getFullYear();
+		const curMonth = now.getMonth();
+		let sum = 0;
+		for (const exp of expensesList) {
+			const d = new Date(exp.date);
+			if (d.getFullYear() === curYear && d.getMonth() === curMonth) {
+				sum += exp.amountCents;
+			}
+		}
+		for (const act of activitiesList) {
+			const d = new Date(act.date);
+			if (d.getFullYear() === curYear && d.getMonth() === curMonth) {
+				sum += act.costCents;
+			}
+		}
+		return sum;
+	});
 </script>
 
 <div class="space-y-6">
 	<!-- Overview Header -->
 	<div class="pb-2">
-		<div class="mb-1 flex items-center gap-2">
-			<span
-				class="rounded-full border border-purple-500/30 bg-purple-500/20 px-2.5 py-0.5 text-xs font-semibold tracking-wider text-purple-400 uppercase"
-			>
-				Real-time Activity Intelligence
-			</span>
-		</div>
 		<h1 class="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-			Household Activity & Expense Overview
+			Household Overview
 		</h1>
-		<p class="mt-1 text-xs text-slate-400">
-			Every uploaded expense receipt and logged maintenance activity dynamically builds your
-			activity heatmap.
-		</p>
 	</div>
 
 	<!-- METRIC SUMMARY CARDS GRID (3-Column Layout) -->
@@ -277,7 +304,7 @@
 			<p class="mt-1 text-xs text-slate-400">Days with logged receipts or activities</p>
 		</div>
 
-		<!-- Total Logged Receipts & Expenses Card -->
+		<!-- Today's Spending Card -->
 		<div
 			class="flex flex-col justify-between rounded-2xl border border-[#262836] bg-[#14151b] p-5 transition-colors hover:border-purple-500/40"
 		>
@@ -286,21 +313,18 @@
 					class="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
 				>
 					<Receipt size={15} class="text-emerald-400" />
-					<span>Total Logged Entries</span>
-				</span>
-				<span
-					class="flex h-7 w-7 items-center justify-center rounded-full bg-[#1c1d26] text-xs font-bold text-emerald-400"
-				>
-					{totalLoggedItems}
+					<span>Today's Spending</span>
 				</span>
 			</div>
 			<div class="mt-4 flex items-baseline gap-2">
-				<h2 class="font-mono text-3xl font-extrabold text-white">{totalLoggedItems} Receipts</h2>
+				<h2 class="font-mono text-3xl font-extrabold text-emerald-400">
+					{formatCurrency(todaySpendCents)}
+				</h2>
 			</div>
-			<p class="mt-1 text-xs text-slate-400">Cataloged across system</p>
+			<p class="mt-1 text-xs text-slate-400">Recorded spend for today</p>
 		</div>
 
-		<!-- Total Active Outlay Card -->
+		<!-- Monthly Expenses Card -->
 		<div
 			class="flex flex-col justify-between rounded-2xl border border-[#262836] bg-[#14151b] p-5 transition-colors hover:border-purple-500/40"
 		>
@@ -309,7 +333,7 @@
 					class="flex items-center gap-1.5 text-xs font-semibold tracking-wider text-slate-400 uppercase"
 				>
 					<TrendingUp size={15} class="text-purple-400" />
-					<span>Annual Total Outlay</span>
+					<span>Monthly Expenses</span>
 				</span>
 				<a
 					href="/expenses"
@@ -320,10 +344,10 @@
 			</div>
 			<div class="mt-4 flex items-baseline gap-2">
 				<h2 class="font-mono text-2xl font-extrabold text-purple-400">
-					{formatCurrency(totalHeatmapOutlayCents)}
+					{formatCurrency(thisMonthSpendCents)}
 				</h2>
 			</div>
-			<p class="mt-1 text-xs text-slate-400">Total spend recorded in the past year</p>
+			<p class="mt-1 text-xs text-slate-400">Total spend across all categories this month</p>
 		</div>
 	</div>
 
@@ -346,72 +370,125 @@
 		<div
 			class="sharp-corners relative overflow-x-auto border border-[#30363d] bg-[#0d1117] p-4 shadow-xl"
 		>
-			<div class="min-w-[720px] select-none">
-				<!-- Month Labels Row -->
-				<div class="mb-1.5 ml-8 flex font-sans text-[10px] text-slate-400">
-					{#each contributionHeatmap.weeks as week, i (i)}
-						<div class="mr-[3px] w-[11px] shrink-0 text-left">
-							{#if week.monthLabel}
-								<span>{week.monthLabel}</span>
-							{/if}
-						</div>
-					{/each}
-				</div>
-
-				<!-- Heatmap Grid Row (Days on left, Weeks across) -->
-				<div class="flex items-start">
-					<!-- Day Labels (Mon, Wed, Fri) -->
-					<div
-						class="flex h-[95px] shrink-0 flex-col justify-between pt-[14px] pr-2 font-sans text-[9px] leading-none text-slate-400 select-none"
-					>
-						<span class="h-[10px]">Mon</span>
-						<span class="h-[10px]">Wed</span>
-						<span class="h-[10px]">Fri</span>
-					</div>
-
-					<!-- Week Columns -->
-					<div class="flex gap-[3px]">
+			<!-- Desktop View (Full Year) & Mobile View (Past 3 Months / 13 Weeks) -->
+			<div class="select-none max-w-full overflow-hidden">
+				<!-- Desktop Layout (Hidden on Mobile) -->
+				<div class="hidden md:block min-w-[720px]">
+					<!-- Month Labels Row -->
+					<div class="mb-1.5 ml-8 flex font-sans text-[10px] text-slate-400">
 						{#each contributionHeatmap.weeks as week, i (i)}
-							<div class="flex flex-col gap-[3px]">
-								{#each week.days as day (day.dateStr)}
-									{#if day.isFuture}
-										<div class="pointer-events-none h-[11px] w-[11px] opacity-0"></div>
-									{:else}
-										<button
-											type="button"
-											tabindex="-1"
-											aria-label="{day.count} contributions on {day.formattedDate}"
-											onmouseenter={(e) => {
-												const target = e.currentTarget as HTMLElement;
-												const rect = target.getBoundingClientRect();
-												const container = target.closest('.relative');
-												if (container) {
-													const parentRect = container.getBoundingClientRect();
-													const x = rect.left - parentRect.left + rect.width / 2;
-													const y = rect.top - parentRect.top;
-													const text =
-														day.count > 0
-															? `${day.count} ${day.count === 1 ? 'contribution' : 'contributions'} on ${day.formattedDate}.`
-															: `No contributions on ${day.formattedDate}.`;
-													hoveredDayTooltip = { text, x, y };
-												}
-											}}
-											onmouseleave={() => (hoveredDayTooltip = null)}
-											class="h-[11px] w-[11px] cursor-pointer rounded-[2px] border transition-colors {day.intensity ===
-											4
-												? 'border-[#39d353] bg-[#39d353]'
-												: day.intensity === 3
-													? 'border-[#26a641] bg-[#26a641]'
-													: day.intensity === 2
-														? 'border-[#006d32] bg-[#006d32]'
-														: day.intensity === 1
-															? 'border-[#0e4429] bg-[#0e4429]'
-															: 'border-[rgba(255,255,255,0.05)] bg-[#161b22] hover:border-slate-500'}"
-										></button>
-									{/if}
-								{/each}
+							<div class="mr-[3px] w-[11px] shrink-0 text-left">
+								{#if week.monthLabel}
+									<span>{week.monthLabel}</span>
+								{/if}
 							</div>
 						{/each}
+					</div>
+
+					<!-- Heatmap Grid Row -->
+					<div class="flex items-start">
+						<div
+							class="flex h-[95px] shrink-0 flex-col justify-between pt-[14px] pr-2 font-sans text-[9px] leading-none text-slate-400 select-none"
+						>
+							<span class="h-[10px]">Mon</span>
+							<span class="h-[10px]">Wed</span>
+							<span class="h-[10px]">Fri</span>
+						</div>
+
+						<div class="flex gap-[3px]">
+							{#each contributionHeatmap.weeks as week, i (i)}
+								<div class="flex flex-col gap-[3px]">
+									{#each week.days as day (day.dateStr)}
+										{#if day.isFuture}
+											<div class="pointer-events-none h-[11px] w-[11px] opacity-0"></div>
+										{:else}
+											<button
+												type="button"
+												tabindex="-1"
+												aria-label="{day.count} contributions on {day.formattedDate}"
+												onmouseenter={(e) => {
+													const target = e.currentTarget as HTMLElement;
+													const rect = target.getBoundingClientRect();
+													const container = target.closest('.relative');
+													if (container) {
+														const parentRect = container.getBoundingClientRect();
+														const x = rect.left - parentRect.left + rect.width / 2;
+														const y = rect.top - parentRect.top;
+														const text =
+															day.count > 0
+																? `${day.count} ${day.count === 1 ? 'contribution' : 'contributions'} on ${day.formattedDate}.`
+																: `No contributions on ${day.formattedDate}.`;
+														hoveredDayTooltip = { text, x, y };
+													}
+												}}
+												onmouseleave={() => (hoveredDayTooltip = null)}
+												class="h-[11px] w-[11px] cursor-pointer rounded-[2px] border transition-colors {day.intensity ===
+												4
+													? 'border-[#39d353] bg-[#39d353]'
+													: day.intensity === 3
+														? 'border-[#26a641] bg-[#26a641]'
+														: day.intensity === 2
+															? 'border-[#006d32] bg-[#006d32]'
+															: day.intensity === 1
+																? 'border-[#0e4429] bg-[#0e4429]'
+																: 'border-[rgba(255,255,255,0.05)] bg-[#161b22] hover:border-slate-500'}"
+											></button>
+										{/if}
+									{/each}
+								</div>
+							{/each}
+						</div>
+					</div>
+				</div>
+
+				<!-- Mobile Layout (Past 3 Months / 13 Weeks - Fits Screen Without Scroll) -->
+				<div class="block md:hidden">
+					<div class="mb-1.5 ml-6 flex font-sans text-[9px] text-slate-400">
+						{#each contributionHeatmap.weeks.slice(-13) as week, i (i)}
+							<div class="mr-[2px] w-[18px] shrink-0 text-left">
+								{#if week.monthLabel}
+									<span>{week.monthLabel}</span>
+								{/if}
+							</div>
+						{/each}
+					</div>
+
+					<div class="flex items-start">
+						<div
+							class="flex h-[130px] shrink-0 flex-col justify-between pt-[10px] pr-1.5 font-sans text-[9px] leading-none text-slate-400 select-none"
+						>
+							<span>Mon</span>
+							<span>Wed</span>
+							<span>Fri</span>
+						</div>
+
+						<div class="flex justify-between w-full gap-[2px]">
+							{#each contributionHeatmap.weeks.slice(-13) as week, i (i)}
+								<div class="flex flex-col gap-[3px] flex-1">
+									{#each week.days as day (day.dateStr)}
+										{#if day.isFuture}
+											<div class="pointer-events-none h-[15px] w-full opacity-0"></div>
+										{:else}
+											<button
+												type="button"
+												tabindex="-1"
+												aria-label="{day.count} contributions on {day.formattedDate}"
+												class="h-[15px] w-full cursor-pointer rounded-[2px] border transition-colors {day.intensity ===
+												4
+													? 'border-[#39d353] bg-[#39d353]'
+													: day.intensity === 3
+														? 'border-[#26a641] bg-[#26a641]'
+														: day.intensity === 2
+															? 'border-[#006d32] bg-[#006d32]'
+															: day.intensity === 1
+																? 'border-[#0e4429] bg-[#0e4429]'
+																: 'border-[rgba(255,255,255,0.05)] bg-[#161b22] hover:border-slate-500'}"
+											></button>
+										{/if}
+									{/each}
+								</div>
+							{/each}
+						</div>
 					</div>
 				</div>
 

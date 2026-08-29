@@ -1339,35 +1339,44 @@
 
 						{#each companiesList as comp (comp.id)}
 							<div
-								class="sharp-corners space-y-3 border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4"
+								class="sharp-corners space-y-4 border border-[var(--color-dark-border)] bg-[var(--color-dark-card)] p-4 sm:p-5"
 							>
-								<div class="flex items-start justify-between gap-3">
+								<!-- Top Row: Logo, Name, Type, and Action Buttons -->
+								<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
 									<div class="flex items-center gap-3">
 										{#if comp.logoUrl}
-											<img
-												src={comp.logoUrl}
-												alt="{comp.name} Logo"
-												class="sharp-corners h-10 w-10 border border-[var(--color-dark-border)] bg-white/5 object-contain p-1"
-											/>
+											<div class="sharp-corners flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden border border-[var(--color-dark-border)] bg-white/5 p-1">
+												<img
+													src={comp.logoUrl}
+													alt="{comp.name} Logo"
+													class="max-h-full max-w-full object-contain"
+												/>
+											</div>
 										{:else}
 											<div
-												class="sharp-corners flex h-10 w-10 items-center justify-center bg-[var(--color-coral-light)] text-xs font-bold text-[var(--color-coral)]"
+												class="sharp-corners flex h-12 w-12 shrink-0 items-center justify-center bg-[var(--color-coral-light)] text-xs font-bold text-[var(--color-coral)]"
 											>
-												<Building2 size={18} />
+												<Building2 size={22} />
 											</div>
 										{/if}
 										<div>
-											<h4 class="text-sm font-bold text-white">{comp.name}</h4>
-											<p class="text-xs text-[var(--color-text-muted)]">
-												Type: <span class="text-white capitalize">{comp.companyType}</span>
+											<h4 class="text-base font-bold text-white">{comp.name}</h4>
+											<div class="flex flex-wrap items-center gap-2 mt-0.5">
+												<span
+													class="sharp-corners bg-[var(--color-coral-light)] px-2 py-0.5 text-[10px] font-bold text-[var(--color-coral)] uppercase tracking-wider"
+												>
+													{comp.companyType}
+												</span>
 												{#if comp.regNumber}
-													• Reg: <span class="font-mono text-white">{comp.regNumber}</span>
+													<span class="text-xs font-mono text-[var(--color-text-muted)]">
+														Reg: {comp.regNumber}
+													</span>
 												{/if}
-											</p>
+											</div>
 										</div>
 									</div>
 
-									<div class="flex items-center gap-2">
+									<div class="flex flex-wrap items-center gap-2">
 										<button
 											type="button"
 											onclick={() => openAddBankAccountModal(comp.id)}
@@ -1388,7 +1397,7 @@
 											type="button"
 											onclick={() => openEditCompanyModal(comp)}
 											title="Edit company"
-											class="p-1.5 text-[var(--color-text-muted)] hover:text-white"
+											class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-1.5 text-[var(--color-text-muted)] hover:text-white"
 										>
 											<Edit3 size={14} />
 										</button>
@@ -1396,26 +1405,68 @@
 											type="button"
 											onclick={() => handleDeleteCompany(comp.id, comp.name)}
 											title="Delete company"
-											class="p-1.5 text-[var(--color-text-muted)] hover:text-red-400"
+											class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-1.5 text-[var(--color-text-muted)] hover:text-red-400"
 										>
 											<Trash2 size={14} />
 										</button>
 									</div>
 								</div>
 
-								<!-- Bank Accounts List -->
-								{#if comp.bankAccounts && comp.bankAccounts.length > 0}
-									<div class="space-y-1.5 border-t border-[var(--color-dark-border)] pt-2">
-										<span class="text-[10px] font-bold text-[var(--color-text-subtle)] uppercase">
-											Bank Accounts ({comp.bankAccounts.length}):
+								<!-- Company Extended Details Grid -->
+								{#if comp.taxNumber || comp.email || comp.phone || comp.address || comp.ownershipDetails}
+									<div class="grid grid-cols-1 gap-2 border-t border-[var(--color-dark-border)] pt-3 text-xs sm:grid-cols-2 lg:grid-cols-3">
+										{#if comp.taxNumber}
+											<div class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2">
+												<span class="block text-[10px] font-bold text-[var(--color-text-subtle)] uppercase">Tax Number</span>
+												<span class="font-mono text-white">{comp.taxNumber}</span>
+											</div>
+										{/if}
+										{#if comp.email}
+											<div class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2">
+												<span class="block text-[10px] font-bold text-[var(--color-text-subtle)] uppercase">Email</span>
+												<span class="text-white truncate block">{comp.email}</span>
+											</div>
+										{/if}
+										{#if comp.phone}
+											<div class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2">
+												<span class="block text-[10px] font-bold text-[var(--color-text-subtle)] uppercase">Phone</span>
+												<span class="text-white">{comp.phone}</span>
+											</div>
+										{/if}
+										{#if comp.address}
+											<div class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2 sm:col-span-2">
+												<span class="block text-[10px] font-bold text-[var(--color-text-subtle)] uppercase">Address</span>
+												<span class="text-white">{comp.address}</span>
+											</div>
+										{/if}
+										{#if comp.ownershipDetails}
+											<div class="sharp-corners border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2 sm:col-span-3">
+												<span class="block text-[10px] font-bold text-[var(--color-coral)] uppercase">Ownership Structure</span>
+												<span class="text-white">{comp.ownershipDetails}</span>
+											</div>
+										{/if}
+									</div>
+								{/if}
+
+								<!-- Bank Accounts List (Multiple per company) -->
+								<div class="space-y-2 border-t border-[var(--color-dark-border)] pt-3">
+									<div class="flex items-center justify-between">
+										<span class="flex items-center gap-1.5 text-[11px] font-bold text-[var(--color-coral)] uppercase tracking-wider">
+											<Landmark size={13} />
+											<span>Bank Accounts ({comp.bankAccounts ? comp.bankAccounts.length : 0})</span>
 										</span>
+									</div>
+
+									{#if comp.bankAccounts && comp.bankAccounts.length > 0}
 										<div class="grid grid-cols-1 gap-2 sm:grid-cols-2">
 											{#each comp.bankAccounts as bank (bank.id)}
 												<div
-													class="sharp-corners flex items-center justify-between border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2.5 text-xs"
+													class="sharp-corners flex items-center justify-between border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-3 text-xs"
 												>
-													<div class="flex items-center gap-2">
-														<Landmark size={14} class="shrink-0 text-[var(--color-coral)]" />
+													<div class="flex items-center gap-2.5">
+														<div class="sharp-corners flex h-8 w-8 shrink-0 items-center justify-center bg-[var(--color-coral-light)] text-[var(--color-coral)]">
+															<Landmark size={15} />
+														</div>
 														<div>
 															<p class="leading-tight font-bold text-white">
 																{bank.accountAlias}
@@ -1424,7 +1475,7 @@
 																>
 															</p>
 															{#if bank.accountNumber}
-																<p class="font-mono text-[10px] text-[var(--color-text-subtle)]">
+																<p class="font-mono text-[11px] text-[var(--color-text-subtle)]">
 																	Acc: {bank.accountNumber}
 																</p>
 															{/if}
@@ -1439,29 +1490,33 @@
 														type="button"
 														onclick={() =>
 															handleDeleteBankAccount(comp.id, bank.id, bank.accountAlias)}
-														class="p-1 text-[var(--color-text-muted)] hover:text-red-400"
+														class="p-1.5 text-[var(--color-text-muted)] hover:text-red-400"
 														title="Delete bank account"
 													>
-														<Trash2 size={13} />
+														<Trash2 size={14} />
 													</button>
 												</div>
 											{/each}
 										</div>
-									</div>
-								{/if}
+									{:else}
+										<div class="sharp-corners border border-dashed border-[var(--color-dark-border)] p-3 text-center text-xs text-[var(--color-text-subtle)]">
+											No bank accounts added yet. Click "+ Bank Account" to link one.
+										</div>
+									{/if}
+								</div>
 
 								<!-- Document Attachments List -->
 								{#if comp.documents && comp.documents.length > 0}
-									<div class="border-t border-[var(--color-dark-border)] pt-2">
+									<div class="border-t border-[var(--color-dark-border)] pt-3">
 										<span class="text-[10px] font-bold text-[var(--color-text-subtle)] uppercase">
 											Attached Documents ({comp.documents.length}):
 										</span>
 										<div class="mt-1 flex flex-wrap gap-2">
 											{#each comp.documents as doc (doc.id)}
 												<span
-													class="sharp-corners flex items-center gap-1 border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] px-2 py-0.5 text-[10px] text-white"
+													class="sharp-corners flex items-center gap-1 border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] px-2.5 py-1 text-[11px] text-white"
 												>
-													<Paperclip size={10} class="text-[var(--color-coral)]" />
+													<Paperclip size={11} class="text-[var(--color-coral)]" />
 													<span>{doc.title}</span>
 												</span>
 											{/each}

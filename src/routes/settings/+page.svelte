@@ -16,7 +16,8 @@
 		Bell,
 		Save,
 		FolderKanban,
-		Paperclip
+		Paperclip,
+		Landmark
 	} from '@lucide/svelte';
 	import type { ExpenseCategory, Company, CompanyDocument, CompanyType } from '$lib/types';
 	import { SvelteMap, SvelteSet } from 'svelte/reactivity';
@@ -1086,6 +1087,44 @@
 											>
 											<p class="text-[11px] leading-tight text-white">{company.ownershipDetails}</p>
 										</div>
+									{/if}
+								</div>
+
+								<!-- Bank Accounts Section (Multiple per company) -->
+								<div class="space-y-2 border-t border-[var(--color-dark-border)] pt-3">
+									<div class="flex items-center justify-between text-xs">
+										<span class="flex items-center gap-1 text-[11px] font-bold text-white">
+											<Landmark size={12} class="text-[var(--color-coral)]" />
+											<span>Bank Accounts ({company.bankAccounts?.length || 0})</span>
+										</span>
+									</div>
+
+									{#if company.bankAccounts && company.bankAccounts.length > 0}
+										<div class="space-y-1.5">
+											{#each company.bankAccounts as bank (bank.id)}
+												<div
+													class="sharp-corners flex items-center justify-between border border-[var(--color-dark-border)] bg-[var(--color-dark-surface)] p-2 text-xs"
+												>
+													<div>
+														<p class="leading-tight font-bold text-white">
+															{bank.accountAlias}
+															<span class="text-[10px] font-normal text-[var(--color-text-muted)]"
+																>({bank.bankName})</span
+															>
+														</p>
+														{#if bank.accountNumber}
+															<p class="font-mono text-[10px] text-[var(--color-text-subtle)]">
+																Acc: {bank.accountNumber}
+															</p>
+														{/if}
+													</div>
+												</div>
+											{/each}
+										</div>
+									{:else}
+										<p class="text-[11px] text-[var(--color-text-subtle)] italic">
+											No bank accounts linked yet.
+										</p>
 									{/if}
 								</div>
 
